@@ -443,7 +443,6 @@ insert into perfiles (nombre, rol, posicion) values
   ('Gerard Cabero',     'jugador', 'Pivote'),
   ('Alexis Martinez',   'jugador', 'Lateral izquierdo'),
   ('Gerard Milla',      'jugador', 'Lateral izquierdo'),
-  ('Sergi Cacho',       'jugador', 'Lateral izquierdo'),
   ('Aitor Rodriguez',   'jugador', 'Lateral derecho'),
   ('Hugo Moreno',       'jugador', 'Lateral derecho'),
   ('Marc Boixadera',    'jugador', 'Central izquierdo'),

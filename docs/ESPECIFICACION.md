@@ -69,9 +69,9 @@ Dos rols: **jugador** i **entrenador (admin)**.
 
 ## 4. Plantilla
 
-23 jugadors + **2 porters pendents** (noms per confirmar). Les **posicions** són
-editables i **només visibles per entrenadors** (permeten detectar patrons, p.ex.
-si tota una línia està carregada físicament).
+24 jugadors en total (inclosos 2 porters). Les **posicions** són editables i
+**només visibles per entrenadors** (permeten detectar patrons, p.ex. si tota una
+línia està carregada físicament).
 
 | # | Jugador | Posició |
 |---|---------|---------|
@@ -91,15 +91,14 @@ si tota una línia està carregada físicament).
 | 14 | Gerard Cabero | Pivot |
 | 15 | Alexis Martinez | Lateral esquerre |
 | 16 | Gerard Milla | Lateral esquerre |
-| 17 | Sergi Cacho | Lateral esquerre |
-| 18 | Aitor Rodriguez | Lateral dret |
-| 19 | Hugo Moreno | Lateral dret |
-| 20 | Marc Boixadera | Central esquerrà |
-| 21 | Solei | Central esquerrà |
-| 22 | Victor Paredes | Central dretà |
-| 23 | Nil Esteve | Central dretà |
-| 24 | Antoni Capdevila | Porter |
-| 25 | Marc Jorquera | Porter |
+| 17 | Aitor Rodriguez | Lateral dret |
+| 18 | Hugo Moreno | Lateral dret |
+| 19 | Marc Boixadera | Central esquerrà |
+| 20 | Solei | Central esquerrà |
+| 21 | Victor Paredes | Central dretà |
+| 22 | Nil Esteve | Central dretà |
+| 23 | Antoni Capdevila | Porter |
+| 24 | Marc Jorquera | Porter |
 
 > Grafies a confirmar amb l'entrenador: *Anyhony* Mosquera, *Roberston Allister*,
 > *Marc Marrahi*, i els noms curts/malnoms (*Santino, Piero, Tammer, Kaius, Solei*).
