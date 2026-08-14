@@ -96,7 +96,7 @@ si tota una línia està carregada físicament).
 | 21 | Solei | Central esquerrà |
 | 22 | Victor Paredes | Central dretà |
 | 23 | Nil Esteve | Central dretà |
-| 24 | Antoni | Porter |
+| 24 | Antony | Porter |
 | 25 | Marc Jorquera | Porter |
 
 > Grafies a confirmar amb l'entrenador: *Anyhony* Mosquera, *Roberston Allister*,
@@ -325,7 +325,7 @@ Els entrenadors només marquen les excepcions (ràpid).
 ## 17. Pendent de l'entrenador per arrencar
 
 1. Crear el **projecte a Supabase** i passar **URL** + **anon key**.
-2. ~~Noms dels 2 porters~~ → Antoni i Marc Jorquera. ✅
+2. ~~Noms dels 2 porters~~ → Antony i Marc Jorquera. ✅
 3. Confirmar **grafies** dubtoses dels noms.
 4. Correus dels entrenadors (Ruben, Xavi, Àlex) i codis desitjats.
 5. Codis de color exactes del club (opcional; si no, s'ajusten a partir de l'escut).
