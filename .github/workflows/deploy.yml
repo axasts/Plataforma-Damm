@@ -1,8 +1,8 @@
 name: Deploy a GitHub Pages
 
+# Desplegament principal via Vercel. Aquest workflow (GitHub Pages) queda
+# només com a opció manual; no s'executa automàticament.
 on:
-  push:
-    branches: [main, claude/project-planning-nnsso1]
   workflow_dispatch:
 
 permissions:

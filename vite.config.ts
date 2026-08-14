@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// El base ha de coincidir amb el nom del repositori per a GitHub Pages.
+// Desplegament a Vercel: la web es serveix a l'arrel del domini.
 export default defineConfig({
   plugins: [react()],
-  base: '/Plataforma-Damm/',
+  base: '/',
 })
