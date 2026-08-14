@@ -98,7 +98,7 @@ si tota una línia està carregada físicament).
 | 21 | Solei | Central esquerrà |
 | 22 | Victor Paredes | Central dretà |
 | 23 | Nil Esteve | Central dretà |
-| 24 | Antony | Porter |
+| 24 | Antoni Capdevila | Porter |
 | 25 | Marc Jorquera | Porter |
 
 > Grafies a confirmar amb l'entrenador: *Anyhony* Mosquera, *Roberston Allister*,
@@ -329,7 +329,7 @@ Els entrenadors només marquen les excepcions (ràpid).
 ## 17. Pendent de l'entrenador per arrencar
 
 1. ~~Crear el projecte a Supabase i passar URL + clau~~ → fet. Schema executat. ✅
-2. ~~Noms dels 2 porters~~ → Antony i Marc Jorquera. ✅
+2. ~~Noms dels 2 porters~~ → Antoni Capdevila i Marc Jorquera. ✅
 3. **Activar Email + desactivar "Confirm email"** a Supabase (Authentication →
    Providers → Email). ⏳ pendent.
 4. Confirmar **grafies** dubtoses dels noms (revisió).

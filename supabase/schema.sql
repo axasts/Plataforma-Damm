@@ -450,7 +450,7 @@ insert into perfiles (nombre, rol, posicion) values
   ('Solei',             'jugador', 'Central izquierdo'),
   ('Victor Paredes',    'jugador', 'Central derecho'),
   ('Nil Esteve',        'jugador', 'Central derecho'),
-  ('Antony',            'jugador', 'Portero'),
+  ('Antoni Capdevila',  'jugador', 'Portero'),
   ('Marc Jorquera',     'jugador', 'Portero');
 
 -- Catàleg de sancions (del reglament intern).
