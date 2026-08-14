@@ -2,7 +2,7 @@ name: Deploy a GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/project-planning-nnsso1]
   workflow_dispatch:
 
 permissions:
