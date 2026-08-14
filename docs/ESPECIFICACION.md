@@ -4,7 +4,9 @@ Especificació funcional del projecte. Document viu: recull tot el que hem
 acordat durant la planificació i serveix de guia per a la construcció.
 
 > **Idioma de la interfície:** castellà.
-> **Estat:** planificació tancada. Pendent d'arrencar la Fase 1 (cal projecte Supabase).
+> **Estat:** ✅ implementació inicial completada (one-shot) i pujada. Base de dades
+> Supabase creada (schema.sql executat amb èxit). Pendent: activar Email a Supabase
+> i revisió pantalla per pantalla. Veure `docs/ESTADO.md`.
 
 ---
 
@@ -313,19 +315,22 @@ Els entrenadors només marquen les excepcions (ràpid).
 
 ## 16. Fases de construcció
 
-1. **Base:** projecte + estil corporatiu + Supabase + login amb codis + càrrega de
+1. ✅ **Base:** projecte + estil corporatiu + Supabase + login amb codis + càrrega de
    plantilla.
-2. **Classificació** (catàleg de sancions + registre ràpid + positius + manual).
-3. **Enquestes + calendari + campaneta de pendents.**
-4. **Estadístiques del jugador** (gràfiques).
-5. **Panell d'entrenador** (estat d'equip + llindars + assistència + lesions).
+2. ✅ **Classificació** (catàleg de sancions + registre ràpid + positius + manual).
+3. ✅ **Enquestes + calendari + campaneta de pendents.**
+4. ✅ **Estadístiques del jugador** (gràfiques).
+5. ✅ **Panell d'entrenador** (estat d'equip + llindars + assistència + lesions).
+
+> Totes les fases implementades al one-shot inicial. Pendent de revisió i ajustos.
 
 ---
 
 ## 17. Pendent de l'entrenador per arrencar
 
-1. Crear el **projecte a Supabase** i passar **URL** + **anon key**.
+1. ~~Crear el projecte a Supabase i passar URL + clau~~ → fet. Schema executat. ✅
 2. ~~Noms dels 2 porters~~ → Antony i Marc Jorquera. ✅
-3. Confirmar **grafies** dubtoses dels noms.
-4. Correus dels entrenadors (Ruben, Xavi, Àlex) i codis desitjats.
+3. **Activar Email + desactivar "Confirm email"** a Supabase (Authentication →
+   Providers → Email). ⏳ pendent.
+4. Confirmar **grafies** dubtoses dels noms (revisió).
 5. Codis de color exactes del club (opcional; si no, s'ajusten a partir de l'escut).
