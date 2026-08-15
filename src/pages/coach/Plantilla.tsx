@@ -66,30 +66,36 @@ export default function Plantilla() {
         </div>
       </Section>
 
-      {editar && <PosicionModal perfil={editar} onClose={() => setEditar(null)} onSaved={() => { setEditar(null); cargar() }} />}
+      {editar && <EditarJugadorModal perfil={editar} onClose={() => setEditar(null)} onSaved={() => { setEditar(null); cargar() }} />}
     </div>
   )
 }
 
-function PosicionModal({ perfil, onClose, onSaved }: {
+function EditarJugadorModal({ perfil, onClose, onSaved }: {
   perfil: Perfil; onClose: () => void; onSaved: () => void
 }) {
+  const [nombre, setNombre] = useState(perfil.nombre)
   const [posicion, setPosicion] = useState(perfil.posicion ?? '')
   const [guardando, setGuardando] = useState(false)
   async function guardar() {
+    if (!nombre.trim()) return
     setGuardando(true)
-    await supabase.from('perfiles').update({ posicion: posicion || null }).eq('id', perfil.id)
+    await supabase.from('perfiles').update({ nombre: nombre.trim(), posicion: posicion || null }).eq('id', perfil.id)
     setGuardando(false)
     onSaved()
   }
   return (
-    <Modal open onClose={onClose} title={perfil.nombre}>
+    <Modal open onClose={onClose} title="Editar jugador">
       <div className="space-y-3">
+        <div>
+          <label className="label">Nombre</label>
+          <input className="input" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        </div>
         <div>
           <label className="label">Posición (solo la ven los entrenadores)</label>
           <input className="input" value={posicion} onChange={(e) => setPosicion(e.target.value)} placeholder="Ej: Lateral derecho" />
         </div>
-        <button className="btn-primary w-full" disabled={guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar'}</button>
+        <button className="btn-primary w-full" disabled={!nombre.trim() || guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar'}</button>
       </div>
     </Modal>
   )
