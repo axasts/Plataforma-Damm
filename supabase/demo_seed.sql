@@ -30,8 +30,8 @@ where extract(dow from d) in (2, 3, 5)
 on conflict do nothing;
 
 insert into eventos (tipo, fecha, hora, rival, titulo) values
-  (current_date - 16, '11:30', 'Sant Just', 'Partido'),
-  (current_date - 2,  '12:00', 'Granollers', 'Partido');
+  ('partido', current_date - 16, '11:30', 'Sant Just', 'Partido'),
+  ('partido', current_date - 2,  '12:00', 'Granollers', 'Partido');
 
 -- 4. Wellness per a la majoria de jugadors en cada event passat.
 insert into wellness (profile_id, evento_id, sueno, fatiga, dolor_muscular, estres, animo, a_tiempo)
