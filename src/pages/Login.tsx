@@ -162,12 +162,22 @@ export default function Login() {
           {modo === 'alta' && opciones && (
             <form onSubmit={onAlta} className="space-y-5">
               <Campo label="¿Quién eres?">
-                <select className="input" required value={perfilId} onChange={(e) => setPerfilId(e.target.value)}>
-                  <option value="">Elige tu nombre…</option>
-                  {opciones.map((o) => (
-                    <option key={o.id} value={o.id}>{o.nombre}</option>
-                  ))}
-                </select>
+                <div className="max-h-56 overflow-y-auto rounded-lg border border-damm-line divide-y divide-damm-line">
+                  {opciones.map((o) => {
+                    const on = perfilId === o.id
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setPerfilId(o.id)}
+                        className={'flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition ' + (on ? 'bg-damm-red/15 text-damm-ink' : 'text-damm-muted hover:bg-white/[0.04] hover:text-damm-ink')}
+                      >
+                        {o.nombre}
+                        {on && <span className="text-xs font-semibold text-damm-red">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
               </Campo>
               <Campo label="Correo">
                 <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
