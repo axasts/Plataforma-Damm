@@ -99,18 +99,9 @@ export default function Login() {
             <span className="font-display text-[15px] font-bold tracking-wide">CF DAMM</span>
           </div>
           <div className="mt-10 md:mt-auto">
-            <span className="eyebrow text-damm-gold">Plataforma del equipo</span>
-            <h1 className="mt-3 font-display text-4xl font-bold leading-[0.98] tracking-tight md:text-5xl">
+            <h1 className="font-display text-5xl font-bold leading-[0.98] tracking-tight md:text-6xl">
               Cadet A
             </h1>
-            <p className="mt-2 max-w-[34ch] text-sm font-medium text-damm-muted">
-              Rendimiento, bienestar y clasificación.
-            </p>
-            <div className="my-5 h-0.5 w-12 bg-damm-gold" />
-            <p className="max-w-[36ch] text-sm text-damm-muted">
-              El día a día del equipo en un solo sitio: puntos, encuestas de wellness y RPE,
-              asistencia y lesiones.
-            </p>
           </div>
         </div>
 
