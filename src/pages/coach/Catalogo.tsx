@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Motivo } from '../../lib/types'
-import { Spinner, Section, Badge, Modal } from '../../components/ui'
+import { Spinner, Modal, IconTrash, IconEdit, PageHeader } from '../../components/ui'
 
 export default function Catalogo() {
   const [motivos, setMotivos] = useState<Motivo[]>([])
@@ -35,33 +35,40 @@ export default function Catalogo() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-black text-damm-ink">Catálogo de sanciones 📖</h1>
-        <button className="btn-primary px-3 py-1.5 text-xs" onClick={() => setNuevo(true)}>+ Nuevo</button>
-      </div>
-      <p className="mb-5 text-sm text-gray-500">El reglamento es dinámico: edita, desactiva o crea motivos cuando quieras.</p>
+      <PageHeader
+        eyebrow="Reglamento"
+        title="Catálogo de sanciones"
+        subtitle="Dinámico: edita, desactiva o crea motivos cuando quieras."
+        action={<button className="btn-primary px-3 py-2 text-xs" onClick={() => setNuevo(true)}>+ Nuevo</button>}
+      />
 
-      {grupos.map((g) => {
-        const items = motivos.filter((m) => m.categoria === g.cat)
-        if (items.length === 0) return null
-        return (
-          <Section key={g.cat} title={g.label}>
-            <div className="card divide-y divide-gray-100">
+      <div className="space-y-9">
+        {grupos.map((g) => {
+          const items = motivos.filter((m) => m.categoria === g.cat)
+          if (items.length === 0) return null
+          return (
+            <div key={g.cat}>
+              <div className="mb-1 flex items-baseline justify-between border-b border-damm-line2 pb-2">
+                <h2 className="eyebrow text-damm-muted">{g.label}</h2>
+                <span className="text-xs tabular-nums text-damm-faint">{items.length} motivos</span>
+              </div>
               {items.map((m) => (
-                <div key={m.id} className="flex items-center justify-between px-4 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className={'truncate text-sm ' + (m.activo ? 'text-damm-ink' : 'text-gray-400 line-through')}>{m.nombre}</p>
+                <div key={m.id} className="group flex items-center gap-3 border-b border-damm-line py-3">
+                  <p className={'min-w-0 flex-1 truncate text-sm ' + (m.activo ? 'text-damm-ink' : 'text-damm-faint line-through')}>{m.nombre}</p>
+                  <span className={'w-10 text-right font-display text-base font-bold tabular-nums ' + (m.puntos >= 0 ? 'text-damm-good' : 'text-damm-red')}>
+                    {m.puntos > 0 ? '+' : ''}{m.puntos}
+                  </span>
+                  <div className="flex items-center gap-1 text-damm-faint">
+                    <button onClick={() => toggleActivo(m)} className="rounded px-2 py-1 text-xs font-medium transition hover:bg-white/5 hover:text-damm-ink">{m.activo ? 'Ocultar' : 'Activar'}</button>
+                    <button onClick={() => setEditar(m)} className="rounded p-1.5 transition hover:bg-white/5 hover:text-damm-ink" aria-label="Editar"><IconEdit /></button>
+                    <button onClick={() => borrar(m.id)} className="rounded p-1.5 transition hover:bg-white/5 hover:text-damm-red" aria-label="Eliminar"><IconTrash /></button>
                   </div>
-                  <Badge color={m.puntos >= 0 ? 'green' : 'red'}>{m.puntos > 0 ? '+' : ''}{m.puntos}</Badge>
-                  <button onClick={() => toggleActivo(m)} className="ml-3 text-xs text-gray-400 hover:text-damm-red">{m.activo ? 'Ocultar' : 'Activar'}</button>
-                  <button onClick={() => setEditar(m)} className="ml-2 text-gray-300 hover:text-damm-red" aria-label="Editar">✏️</button>
-                  <button onClick={() => borrar(m.id)} className="ml-2 text-gray-300 hover:text-red-500" aria-label="Eliminar">🗑</button>
                 </div>
               ))}
             </div>
-          </Section>
-        )
-      })}
+          )
+        })}
+      </div>
 
       {(editar || nuevo) && (
         <MotivoModal

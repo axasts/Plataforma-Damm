@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Perfil } from '../../lib/types'
-import { Spinner, Section, Badge, Modal } from '../../components/ui'
+import { Spinner, Badge, Modal, IconEdit, IconTrash, PageHeader } from '../../components/ui'
 
 export default function Plantilla() {
   const [perfiles, setPerfiles] = useState<Perfil[]>([])
@@ -21,50 +21,79 @@ export default function Plantilla() {
   }
   useEffect(() => { cargar() }, [])
 
+  async function borrar(p: Perfil) {
+    if (!window.confirm(`¿Eliminar a ${p.nombre}? También se borrarán sus datos (puntos, encuestas, asistencia…). No se puede deshacer.`)) return
+    await supabase.from('perfiles').delete().eq('id', p.id)
+    cargar()
+  }
+
   if (cargando) return <Spinner />
 
   const jugadores = perfiles.filter((p) => p.rol === 'jugador')
   const entrenadores = perfiles.filter((p) => p.rol === 'entrenador')
 
+  // Agrupar jugadores por posición (así el entrenador ve el equipo por líneas)
+  const porPosicion = new Map<string, Perfil[]>()
+  for (const p of jugadores) {
+    const pos = p.posicion?.trim() || 'Sin posición'
+    if (!porPosicion.has(pos)) porPosicion.set(pos, [])
+    porPosicion.get(pos)!.push(p)
+  }
+
   return (
     <div>
-      <h1 className="mb-4 text-lg font-black text-damm-ink">Plantilla 👥</h1>
+      <PageHeader
+        eyebrow="Equipo"
+        title="Plantilla"
+        subtitle={`${jugadores.length} jugadores · ${entrenadores.length} entrenadores`}
+      />
 
       {codigos && (
-        <div className="card mb-6 p-4">
-          <p className="mb-2 text-sm font-semibold text-damm-ink">Códigos de acceso</p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Badge color="red">Equipo: <span className="ml-1 font-mono font-bold">{codigos.team_code}</span></Badge>
-            <Badge color="gold">Entrenadores: <span className="ml-1 font-mono font-bold">{codigos.staff_code}</span></Badge>
+        <div className="mb-8 grid grid-cols-2 divide-x divide-damm-line border-y border-damm-line">
+          <div className="px-4 py-3.5">
+            <p className="eyebrow text-damm-faint">Código equipo</p>
+            <p className="mt-1.5 font-mono text-lg font-bold tracking-wide text-damm-ink">{codigos.team_code}</p>
+          </div>
+          <div className="px-4 py-3.5">
+            <p className="eyebrow text-damm-faint">Código entrenadores</p>
+            <p className="mt-1.5 font-mono text-lg font-bold tracking-wide text-damm-gold">{codigos.staff_code}</p>
           </div>
         </div>
       )}
 
-      <Section title={`Jugadores (${jugadores.length})`}>
-        <div className="card divide-y divide-gray-100">
-          {jugadores.map((p) => (
-            <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
-              <Link to={`/jugador/${p.id}`} className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-damm-ink">{p.nombre}</p>
-                <p className="truncate text-xs text-gray-400">{p.posicion ?? 'Sin posición'}</p>
-              </Link>
-              {p.user_id ? <Badge color="green">Alta ✓</Badge> : <Badge color="gray">Sin alta</Badge>}
-              <button onClick={() => setEditar(p)} className="ml-3 text-gray-300 hover:text-damm-red" aria-label="Editar">✏️</button>
+      <div className="space-y-7">
+        {[...porPosicion.entries()].map(([pos, list]) => (
+          <div key={pos}>
+            <div className="mb-1 flex items-baseline justify-between border-b border-damm-line2 pb-2">
+              <h2 className="eyebrow text-damm-muted">{pos}</h2>
+              <span className="text-xs tabular-nums text-damm-faint">{list.length}</span>
             </div>
-          ))}
-        </div>
-      </Section>
+            {list.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 border-b border-damm-line py-3">
+                <Link to={`/jugador/${p.id}`} className="min-w-0 flex-1 text-sm font-medium text-damm-ink transition hover:text-damm-red">
+                  {p.nombre}
+                </Link>
+                {p.user_id ? <Badge color="green">Alta ✓</Badge> : <Badge color="gray">Sin alta</Badge>}
+                <button onClick={() => setEditar(p)} className="rounded p-1.5 text-damm-faint transition hover:bg-white/5 hover:text-damm-ink" aria-label="Editar"><IconEdit /></button>
+                <button onClick={() => borrar(p)} className="rounded p-1.5 text-damm-faint transition hover:bg-white/5 hover:text-damm-red" aria-label="Eliminar"><IconTrash /></button>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
 
-      <Section title={`Entrenadores (${entrenadores.length})`}>
-        <div className="card divide-y divide-gray-100">
-          {entrenadores.map((p) => (
-            <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
-              <span className="text-sm font-medium text-damm-ink">{p.nombre}</span>
-              {p.user_id ? <Badge color="green">Alta ✓</Badge> : <Badge color="gray">Sin alta</Badge>}
-            </div>
-          ))}
+      <div className="mt-9">
+        <div className="mb-1 flex items-baseline justify-between border-b border-damm-line2 pb-2">
+          <h2 className="eyebrow text-damm-muted">Entrenadores</h2>
+          <span className="text-xs tabular-nums text-damm-faint">{entrenadores.length}</span>
         </div>
-      </Section>
+        {entrenadores.map((p) => (
+          <div key={p.id} className="flex items-center justify-between border-b border-damm-line py-3">
+            <span className="text-sm font-medium text-damm-ink">{p.nombre}</span>
+            {p.user_id ? <Badge color="green">Alta ✓</Badge> : <Badge color="gray">Sin alta</Badge>}
+          </div>
+        ))}
+      </div>
 
       {editar && <EditarJugadorModal perfil={editar} onClose={() => setEditar(null)} onSaved={() => { setEditar(null); cargar() }} />}
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { ReglaAlerta } from '../../lib/types'
-import { Spinner, Section, EmptyState, Badge, Modal } from '../../components/ui'
+import { Spinner, Section, EmptyState, Badge, Modal, IconTrash } from '../../components/ui'
 import { ETIQUETAS_METRICA } from '../../lib/utils'
 
 const METRICAS = ['rpe_muscular', 'rpe_respiratorio', 'sueno', 'fatiga', 'dolor_muscular', 'estres', 'animo']
@@ -32,25 +32,25 @@ export default function ReglasAlertaPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-black text-damm-ink">Alertas de picos 🚨</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Alertas de picos</h1>
         <button className="btn-primary px-3 py-1.5 text-xs" onClick={() => setNueva(true)}>+ Nueva</button>
       </div>
-      <p className="mb-5 text-sm text-gray-500">Define cuándo quieres que el panel te avise. Ej: RPE muscular ≥ 9, o sueño ≤ 2.</p>
+      <p className="mb-6 text-sm text-damm-muted">Define cuándo quieres que el panel te avise. Ej: RPE muscular ≥ 9, o sueño ≤ 2.</p>
 
       <Section title="Reglas">
         {reglas.length === 0 ? (
           <EmptyState>No hay reglas. Crea la primera.</EmptyState>
         ) : (
-          <div className="card divide-y divide-gray-100">
+          <div className="card divide-y divide-white/5">
             {reglas.map((r) => (
               <div key={r.id} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <p className="text-sm font-medium text-damm-ink">{ETIQUETAS_METRICA[r.metrica] ?? r.metrica}</p>
-                  <p className="text-xs text-gray-400">Avisar si {r.operador} {r.valor}</p>
+                  <p className="text-xs text-damm-faint">Avisar si {r.operador} {r.valor}</p>
                 </div>
                 {r.activa ? <Badge color="green">Activa</Badge> : <Badge color="gray">Inactiva</Badge>}
-                <button onClick={() => toggle(r)} className="ml-3 text-xs text-gray-400 hover:text-damm-red">{r.activa ? 'Desactivar' : 'Activar'}</button>
-                <button onClick={() => borrar(r.id)} className="ml-2 text-gray-300 hover:text-red-500" aria-label="Eliminar">🗑</button>
+                <button onClick={() => toggle(r)} className="ml-3 text-xs font-medium text-damm-faint transition hover:text-damm-ink">{r.activa ? 'Desactivar' : 'Activar'}</button>
+                <button onClick={() => borrar(r.id)} className="ml-2 text-damm-faint transition hover:text-damm-red" aria-label="Eliminar"><IconTrash /></button>
               </div>
             ))}
           </div>
@@ -77,19 +77,32 @@ function ReglaModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
 
   return (
     <Modal open onClose={onClose} title="Nueva regla de alerta">
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
           <label className="label">Métrica</label>
-          <select className="input" value={metrica} onChange={(e) => setMetrica(e.target.value)}>
-            {METRICAS.map((m) => <option key={m} value={m}>{ETIQUETAS_METRICA[m]}</option>)}
-          </select>
+          <div className="max-h-52 overflow-y-auto rounded-lg border border-damm-line divide-y divide-damm-line">
+            {METRICAS.map((m) => {
+              const on = metrica === m
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMetrica(m)}
+                  className={'flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition ' + (on ? 'bg-damm-red/15 text-damm-ink' : 'text-damm-muted hover:bg-white/[0.04] hover:text-damm-ink')}
+                >
+                  {ETIQUETAS_METRICA[m] ?? m}
+                  {on && <span className="text-xs font-semibold text-damm-red">✓</span>}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div>
           <label className="label">Condición</label>
-          <select className="input" value={operador} onChange={(e) => setOperador(e.target.value as any)}>
-            <option value=">=">Mayor o igual (≥)</option>
-            <option value="<=">Menor o igual (≤)</option>
-          </select>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setOperador('>=')} className={'flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ' + (operador === '>=' ? 'border-damm-red bg-damm-red/15 text-damm-ink' : 'border-damm-line text-damm-muted hover:text-damm-ink')}>Mayor o igual · ≥</button>
+            <button type="button" onClick={() => setOperador('<=')} className={'flex-1 rounded-lg border py-2.5 text-sm font-semibold transition ' + (operador === '<=' ? 'border-damm-red bg-damm-red/15 text-damm-ink' : 'border-damm-line text-damm-muted hover:text-damm-ink')}>Menor o igual · ≤</button>
+          </div>
         </div>
         <div>
           <label className="label">Valor (0–10)</label>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Lesion } from '../../lib/types'
-import { Spinner, Section, EmptyState, Badge, Modal } from '../../components/ui'
+import { Spinner, Section, EmptyState, Badge, Modal, IconTrash } from '../../components/ui'
 import { formatFecha, hoyISO } from '../../lib/utils'
 
 interface Jug { id: string; nombre: string }
@@ -37,26 +37,26 @@ export default function Lesiones() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-black text-damm-ink">Lesiones 🩹</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Lesiones</h1>
         <button className="btn-primary px-3 py-1.5 text-xs" onClick={() => setNueva(true)}>+ Nueva</button>
       </div>
-      <p className="mb-5 text-sm text-gray-500">Mientras dura la lesión, al jugador no se le pide RPE (el wellness se mantiene) y queda marcado como lesionado.</p>
+      <p className="mb-6 text-sm text-damm-muted">Mientras dura la lesión, al jugador no se le pide RPE (el wellness se mantiene) y queda marcado como lesionado.</p>
 
       <Section title="Lesiones registradas">
         {lesiones.length === 0 ? (
           <EmptyState>No hay lesiones registradas.</EmptyState>
         ) : (
-          <div className="card divide-y divide-gray-100">
+          <div className="card divide-y divide-white/5">
             {lesiones.map((l) => (
               <div key={l.id} className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-damm-ink">{nombreDe(l.profile_id)}</p>
-                  <p className="text-xs capitalize text-gray-400">
+                  <p className="text-xs capitalize text-damm-faint">
                     {formatFecha(l.fecha_inicio)} → {formatFecha(l.fecha_fin)}{l.descripcion ? ` · ${l.descripcion}` : ''}
                   </p>
                 </div>
                 {activa(l) ? <Badge color="red">Activa</Badge> : <Badge color="gray">Finalizada</Badge>}
-                <button onClick={() => borrar(l.id)} className="ml-3 text-gray-300 hover:text-red-500" aria-label="Eliminar">🗑</button>
+                <button onClick={() => borrar(l.id)} className="ml-3 text-damm-faint transition hover:text-damm-red" aria-label="Eliminar"><IconTrash /></button>
               </div>
             ))}
           </div>
@@ -106,7 +106,7 @@ function LesionModal({ jugadores, onClose, onSaved }: {
         <div>
           <label className="label">Duración (semanas)</label>
           <input className="input" type="number" min={1} value={semanas} onChange={(e) => setSemanas(e.target.value)} />
-          <p className="mt-1 text-xs text-gray-400">Fin previsto: {formatFecha(finCalculado())}</p>
+          <p className="mt-1 text-xs text-damm-faint">Fin previsto: {formatFecha(finCalculado())}</p>
         </div>
         <div><label className="label">Descripción (opcional)</label><input className="input" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} placeholder="Ej: esguince tobillo" /></div>
         <button className="btn-primary w-full" disabled={!profileId || guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Registrar lesión'}</button>

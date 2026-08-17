@@ -11,10 +11,9 @@ import Clasificacion from './pages/shared/Clasificacion'
 import JugadorDetalle from './pages/shared/JugadorDetalle'
 import CoachLayout from './pages/coach/CoachLayout'
 import CoachHome from './pages/coach/CoachHome'
-import Puntos from './pages/coach/Puntos'
 import Catalogo from './pages/coach/Catalogo'
 import Calendario from './pages/coach/Calendario'
-import Asistencia from './pages/coach/Asistencia'
+import Sesion from './pages/coach/Sesion'
 import Lesiones from './pages/coach/Lesiones'
 import ReglasAlerta from './pages/coach/ReglasAlerta'
 import Plantilla from './pages/coach/Plantilla'
@@ -31,10 +30,9 @@ export default function App() {
       <Routes>
         <Route element={<CoachLayout />}>
           <Route path="/" element={<CoachHome />} />
-          <Route path="/puntos" element={<Puntos />} />
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/calendario" element={<Calendario />} />
-          <Route path="/asistencia" element={<Asistencia />} />
+          <Route path="/sesion/:eventoId" element={<Sesion />} />
           <Route path="/lesiones" element={<Lesiones />} />
           <Route path="/alertas" element={<ReglasAlerta />} />
           <Route path="/plantilla" element={<Plantilla />} />

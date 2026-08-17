@@ -2,8 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
+/* ===================== TIPOGRAFÍA (self-hosted) ===================== */
+@font-face{font-family:'Archivo';font-style:normal;font-weight:600;font-display:swap;src:url('./assets/fonts/archivo-600.woff2') format('woff2');}
+@font-face{font-family:'Archivo';font-style:normal;font-weight:700;font-display:swap;src:url('./assets/fonts/archivo-700.woff2') format('woff2');}
+@font-face{font-family:'Archivo';font-style:normal;font-weight:800;font-display:swap;src:url('./assets/fonts/archivo-800.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url('./assets/fonts/hanken-400.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('./assets/fonts/hanken-500.woff2') format('woff2');}
+@font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url('./assets/fonts/hanken-700.woff2') format('woff2');}
+
+:root{
+  color-scheme: dark;
 }
 
 html,
@@ -14,8 +22,16 @@ body,
 
 body {
   margin: 0;
-  background: #f3f4f6;
+  background: #0a0b0d;
+  color: #f3f1ec;
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Titulares con la display font */
+h1, h2, h3, .font-display {
+  font-family: 'Archivo', system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 @layer components {
@@ -23,27 +39,38 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-damm-red text-white hover:bg-damm-red-dark shadow-sm;
+    @apply btn bg-damm-red text-white hover:bg-damm-red-dark;
   }
+  /* Acento sobrio en oro, solo para acciones especiales */
   .btn-gold {
-    @apply btn bg-damm-gold text-damm-ink hover:bg-damm-gold-dark shadow-sm;
+    @apply btn border border-damm-gold/40 bg-transparent text-damm-gold hover:bg-damm-gold/10;
   }
   .btn-ghost {
-    @apply btn bg-white text-damm-ink border border-gray-200 hover:bg-gray-50;
+    @apply btn border border-damm-line bg-white/[0.03] text-damm-ink hover:bg-white/[0.07];
   }
   .btn-danger {
-    @apply btn bg-white text-red-600 border border-red-200 hover:bg-red-50;
+    @apply btn border border-damm-red/40 bg-transparent text-damm-red hover:bg-damm-red/10;
   }
+  /* Panel oscuro con filete fino — sustituye la vieja tarjeta blanca */
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100;
+    @apply rounded-xl border border-damm-line bg-damm-panel;
   }
   .input {
-    @apply w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-damm-red focus:ring-2 focus:ring-damm-red/20;
+    @apply w-full rounded-lg border border-damm-line bg-white/[0.03] px-3 py-2.5 text-sm text-damm-ink outline-none placeholder:text-damm-faint focus:border-damm-red focus:ring-2 focus:ring-damm-red/25;
   }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-damm-faint;
   }
   .chip {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  /* Eyebrow / etiqueta de sección en mayúsculas */
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-damm-faint;
   }
 }
+
+/* Barras de scroll finas y oscuras */
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(243,241,236,.14); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }

@@ -84,10 +84,12 @@ create table puntos (
   puntos         int  not null,       -- amb signe
   motivo         text,                -- descripció (del catàleg o manual)
   motivo_id      uuid references motivos_puntos(id) on delete set null,
+  evento_id      uuid references eventos(id) on delete set null,  -- sessió on es va registrar
   fecha          date not null default current_date,
   registrado_por uuid references perfiles(id) on delete set null,
   created_at     timestamptz default now()
 );
+create index if not exists idx_puntos_evento on puntos(evento_id);
 
 -- Respostes Wellness (una per jugador i esdeveniment).
 create table wellness (

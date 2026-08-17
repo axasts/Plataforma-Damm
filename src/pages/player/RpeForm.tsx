@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { Evento } from '../../lib/types'
-import { Spinner, ScaleInput } from '../../components/ui'
+import { Spinner, ScaleInput, PageHeader } from '../../components/ui'
 import { METRICAS_RPE, rpeATiempo, nombreEvento, formatFechaLarga } from '../../lib/utils'
 
 export default function RpeForm() {
@@ -45,25 +45,32 @@ export default function RpeForm() {
     nav('/')
   }
 
-  return (
-    <div>
-      <button onClick={() => nav('/')} className="mb-3 text-sm text-gray-400">← Volver</button>
-      <h1 className="text-lg font-black text-damm-ink">RPE 🔥</h1>
-      <p className="mb-1 text-sm text-gray-500">{nombreEvento(evento)}</p>
-      <p className="mb-5 text-xs capitalize text-gray-400">{formatFechaLarga(evento.fecha)}</p>
+  const hechas = METRICAS_RPE.filter((m) => vals[m.key] !== null).length
 
-      <div className="space-y-5">
+  return (
+    <div className="pb-24">
+      <button onClick={() => nav('/')} className="mb-4 text-sm text-damm-faint transition hover:text-damm-muted">← Volver</button>
+      <PageHeader
+        eyebrow="Esfuerzo percibido"
+        title="RPE"
+        subtitle={`${nombreEvento(evento)} · ${formatFechaLarga(evento.fecha)}`}
+        action={<span className="font-display text-sm font-bold tabular-nums text-damm-muted">{hechas}<span className="text-damm-faint">/{METRICAS_RPE.length}</span></span>}
+      />
+
+      <div className="border-t border-damm-line">
         {METRICAS_RPE.map((m) => (
-          <div key={m.key} className="card p-4">
-            <label className="label">{m.label}</label>
+          <div key={m.key} className="border-b border-damm-line py-5">
+            <label className="mb-3 block text-[15px] font-semibold text-damm-ink">{m.label}</label>
             <ScaleInput value={vals[m.key]} onChange={(v) => setVals((s) => ({ ...s, [m.key]: v }))} min={m.min} max={m.max} />
           </div>
         ))}
+      </div>
 
-        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
+      {error && <div className="mt-5 rounded-lg border border-damm-red/30 bg-damm-red/10 px-3 py-2 text-sm text-[#ff8a95]">{error}</div>}
 
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-lg border-t border-damm-line bg-damm-bg/90 px-4 py-3 backdrop-blur">
         <button className="btn-primary w-full" disabled={!completo || guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : completo ? 'Enviar RPE' : 'Responde las dos preguntas'}
+          {guardando ? 'Guardando…' : completo ? 'Enviar RPE' : `Faltan ${METRICAS_RPE.length - hechas} respuestas`}
         </button>
       </div>
     </div>

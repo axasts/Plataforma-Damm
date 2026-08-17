@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Escudo } from '../components/ui'
-import { NOMBRE_EQUIPO } from '../config'
 
 type Modo = 'entrar' | 'alta'
 
@@ -14,7 +13,9 @@ interface OpcionPerfil {
 
 export default function Login() {
   const { signIn, signUpYReclamar } = useAuth()
-  const [modo, setModo] = useState<Modo>('entrar')
+  // El alta ("primer acceso") solo se muestra si se entra por el enlace con ?alta
+  const altaPermitida = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('alta')
+  const [modo, setModo] = useState<Modo>(altaPermitida ? 'alta' : 'entrar')
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
 
@@ -76,93 +77,139 @@ export default function Login() {
     }
   }
 
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-damm-red to-damm-red-darker px-4 py-10">
-      <div className="mb-6 flex flex-col items-center text-white">
-        <Escudo size={72} />
-        <h1 className="mt-3 text-xl font-black tracking-tight">{NOMBRE_EQUIPO}</h1>
-        <p className="text-sm text-white/70">Plataforma del equipo</p>
-      </div>
+  function cambiarModo(m: Modo) {
+    setModo(m)
+    setError('')
+    if (m === 'entrar') setOpciones(null)
+  }
 
-      <div className="card w-full max-w-sm p-6">
-        <div className="mb-5 grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1 text-sm font-semibold">
-          <button
-            className={'rounded-md py-2 ' + (modo === 'entrar' ? 'bg-white shadow text-damm-red' : 'text-gray-500')}
-            onClick={() => { setModo('entrar'); setError('') }}
-          >
-            Entrar
-          </button>
-          <button
-            className={'rounded-md py-2 ' + (modo === 'alta' ? 'bg-white shadow text-damm-red' : 'text-gray-500')}
-            onClick={() => { setModo('alta'); setError(''); setOpciones(null) }}
-          >
-            Primer acceso
-          </button>
+  return (
+    <div className="min-h-screen bg-damm-bg text-damm-ink md:flex md:items-center md:justify-center md:p-6">
+      <div className="mx-auto grid min-h-screen w-full max-w-5xl overflow-hidden md:min-h-0 md:grid-cols-[1.05fr_0.95fr] md:rounded-2xl md:border md:border-damm-line md:shadow-2xl">
+        {/* ---------- Marca ---------- */}
+        <div
+          className="relative flex flex-col overflow-hidden px-7 py-9 md:px-10 md:py-12"
+          style={{ background: 'radial-gradient(120% 90% at 12% 8%, #17191f 0%, #0a0b0d 60%)' }}
+        >
+          <div className="pointer-events-none absolute -bottom-16 -right-16 opacity-[0.05]">
+            <Escudo size={300} />
+          </div>
+          <div className="flex items-center gap-3">
+            <Escudo size={40} />
+            <span className="font-display text-[15px] font-bold tracking-wide">CF DAMM</span>
+          </div>
+          <div className="mt-10 md:mt-auto">
+            <span className="eyebrow text-damm-gold">Plataforma del equipo</span>
+            <h1 className="mt-3 font-display text-4xl font-bold leading-[0.98] tracking-tight md:text-5xl">
+              Cadet A
+            </h1>
+            <p className="mt-2 max-w-[34ch] text-sm font-medium text-damm-muted">
+              Rendimiento, bienestar y clasificación.
+            </p>
+            <div className="my-5 h-0.5 w-12 bg-damm-gold" />
+            <p className="max-w-[36ch] text-sm text-damm-muted">
+              El día a día del equipo en un solo sitio: puntos, encuestas de wellness y RPE,
+              asistencia y lesiones.
+            </p>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>
-        )}
+        {/* ---------- Formulario ---------- */}
+        <div className="flex flex-col justify-center bg-damm-panel2 px-7 py-9 md:px-10 md:py-12">
+          {altaPermitida ? (
+            <div className="mb-7 flex gap-7 border-b border-damm-line">
+              <TabBtn on={modo === 'alta'} onClick={() => cambiarModo('alta')}>Primer acceso</TabBtn>
+              <TabBtn on={modo === 'entrar'} onClick={() => cambiarModo('entrar')}>Entrar</TabBtn>
+            </div>
+          ) : (
+            <h2 className="mb-7 border-b border-damm-line pb-3 font-display text-xl font-bold tracking-tight">Entrar</h2>
+          )}
 
-        {modo === 'entrar' && (
-          <form onSubmit={onEntrar} className="space-y-4">
-            <div>
-              <label className="label">Correo</label>
-              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          {error && (
+            <div className="mb-5 rounded-lg border border-damm-red/30 bg-damm-red/10 px-3 py-2 text-sm text-[#ff8a95]">
+              {error}
             </div>
-            <div>
-              <label className="label">Contraseña</label>
-              <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <button className="btn-primary w-full" disabled={cargando}>
-              {cargando ? 'Entrando…' : 'Entrar'}
-            </button>
-          </form>
-        )}
+          )}
 
-        {modo === 'alta' && !opciones && (
-          <form onSubmit={onBuscarCodigo} className="space-y-4">
-            <p className="text-sm text-gray-500">
-              Introduce el código que te han dado los entrenadores para ver la lista y elegir tu nombre.
-            </p>
-            <div>
-              <label className="label">Código de acceso</label>
-              <input className="input" required value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ej: DAMM2026" />
-            </div>
-            <button className="btn-primary w-full" disabled={cargando}>
-              {cargando ? 'Comprobando…' : 'Continuar'}
-            </button>
-          </form>
-        )}
+          {modo === 'entrar' && (
+            <form onSubmit={onEntrar} className="space-y-5">
+              <Campo label="Correo">
+                <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Campo>
+              <Campo label="Contraseña">
+                <input className="input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </Campo>
+              <button className="btn-primary w-full" disabled={cargando}>
+                {cargando ? 'Entrando…' : 'Entrar'}
+              </button>
+            </form>
+          )}
 
-        {modo === 'alta' && opciones && (
-          <form onSubmit={onAlta} className="space-y-4">
-            <div>
-              <label className="label">¿Quién eres?</label>
-              <select className="input" required value={perfilId} onChange={(e) => setPerfilId(e.target.value)}>
-                <option value="">Elige tu nombre…</option>
-                {opciones.map((o) => (
-                  <option key={o.id} value={o.id}>{o.nombre}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">Correo</label>
-              <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Crea una contraseña</label>
-              <input className="input" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <button className="btn-primary w-full" disabled={cargando || !perfilId}>
-              {cargando ? 'Creando cuenta…' : 'Crear cuenta'}
-            </button>
-            <button type="button" className="w-full text-center text-xs text-gray-400" onClick={() => setOpciones(null)}>
-              ← Cambiar código
-            </button>
-          </form>
-        )}
+          {modo === 'alta' && !opciones && (
+            <form onSubmit={onBuscarCodigo} className="space-y-5">
+              <p className="text-sm text-damm-muted">
+                Introduce el código que te han dado los entrenadores para ver la lista y elegir tu nombre.
+              </p>
+              <Campo label="Código de acceso">
+                <input className="input" required value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+              </Campo>
+              <button className="btn-primary w-full" disabled={cargando}>
+                {cargando ? 'Comprobando…' : 'Continuar'}
+              </button>
+            </form>
+          )}
+
+          {modo === 'alta' && opciones && (
+            <form onSubmit={onAlta} className="space-y-5">
+              <Campo label="¿Quién eres?">
+                <select className="input" required value={perfilId} onChange={(e) => setPerfilId(e.target.value)}>
+                  <option value="">Elige tu nombre…</option>
+                  {opciones.map((o) => (
+                    <option key={o.id} value={o.id}>{o.nombre}</option>
+                  ))}
+                </select>
+              </Campo>
+              <Campo label="Correo">
+                <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Campo>
+              <Campo label="Crea una contraseña">
+                <input className="input" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+              </Campo>
+              <button className="btn-primary w-full" disabled={cargando || !perfilId}>
+                {cargando ? 'Creando cuenta…' : 'Crear cuenta'}
+              </button>
+              <button type="button" className="w-full text-center text-xs font-medium text-damm-faint hover:text-damm-muted" onClick={() => setOpciones(null)}>
+                ← Cambiar código
+              </button>
+            </form>
+          )}
+        </div>
       </div>
+    </div>
+  )
+}
+
+function TabBtn({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'relative -mb-px pb-3 text-sm font-semibold transition ' +
+        (on ? 'text-damm-ink' : 'text-damm-faint hover:text-damm-muted')
+      }
+    >
+      {children}
+      {on && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-damm-red" />}
+    </button>
+  )
+}
+
+function Campo({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <label className="label">{label}</label>
+      {children}
     </div>
   )
 }

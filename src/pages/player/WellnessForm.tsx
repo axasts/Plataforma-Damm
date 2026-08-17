@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { Evento } from '../../lib/types'
-import { Spinner, ScaleInput } from '../../components/ui'
+import { Spinner, ScaleInput, PageHeader } from '../../components/ui'
 import { METRICAS_WELLNESS, wellnessATiempo, nombreEvento, formatFechaLarga } from '../../lib/utils'
 
 export default function WellnessForm() {
@@ -49,34 +49,45 @@ export default function WellnessForm() {
     nav('/')
   }
 
-  return (
-    <div>
-      <button onClick={() => nav('/')} className="mb-3 text-sm text-gray-400">← Volver</button>
-      <h1 className="text-lg font-black text-damm-ink">Wellness 🌙</h1>
-      <p className="mb-1 text-sm text-gray-500">{nombreEvento(evento)}</p>
-      <p className="mb-5 text-xs capitalize text-gray-400">{formatFechaLarga(evento.fecha)}</p>
+  const hechas = METRICAS_WELLNESS.filter((m) => vals[m.key] !== null).length
 
-      <div className="space-y-5">
+  return (
+    <div className="pb-24">
+      <button onClick={() => nav('/')} className="mb-4 text-sm text-damm-faint transition hover:text-damm-muted">← Volver</button>
+      <PageHeader
+        eyebrow="Encuesta de la mañana"
+        title="Wellness"
+        subtitle={`${nombreEvento(evento)} · ${formatFechaLarga(evento.fecha)}`}
+        action={<span className="font-display text-sm font-bold tabular-nums text-damm-muted">{hechas}<span className="text-damm-faint">/{METRICAS_WELLNESS.length}</span></span>}
+      />
+
+      {/* Preguntas separadas por filetes, sin una caja por cada una */}
+      <div className="border-t border-damm-line">
         {METRICAS_WELLNESS.map((m) => (
-          <div key={m.key} className="card p-4">
-            <label className="label">{m.label}</label>
+          <div key={m.key} className="border-b border-damm-line py-5">
+            <label className="mb-3 block text-[15px] font-semibold text-damm-ink">{m.label}</label>
             <ScaleInput value={vals[m.key]} onChange={(v) => setVals((s) => ({ ...s, [m.key]: v }))} min={m.min} max={m.max} />
           </div>
         ))}
+      </div>
 
-        <div className="card p-4">
+      <div className="mt-7 space-y-4">
+        <div>
           <label className="label">Zona de molestias (opcional)</label>
           <input className="input" value={zona} onChange={(e) => setZona(e.target.value)} placeholder="Ej: gemelo derecho" />
         </div>
-        <div className="card p-4">
+        <div>
           <label className="label">Comentario (opcional)</label>
           <textarea className="input" rows={3} value={comentario} onChange={(e) => setComentario(e.target.value)} />
         </div>
+      </div>
 
-        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
+      {error && <div className="mt-5 rounded-lg border border-damm-red/30 bg-damm-red/10 px-3 py-2 text-sm text-[#ff8a95]">{error}</div>}
 
+      {/* Barra de envío fija abajo */}
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-lg border-t border-damm-line bg-damm-bg/90 px-4 py-3 backdrop-blur">
         <button className="btn-primary w-full" disabled={!completo || guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : completo ? 'Enviar wellness' : 'Responde todas las preguntas'}
+          {guardando ? 'Guardando…' : completo ? 'Enviar wellness' : `Faltan ${METRICAS_WELLNESS.length - hechas} respuestas`}
         </button>
       </div>
     </div>

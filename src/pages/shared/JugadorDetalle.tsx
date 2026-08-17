@@ -37,21 +37,21 @@ export default function JugadorDetalle() {
 
   return (
     <div>
-      <button onClick={() => nav(-1)} className="mb-3 text-sm text-gray-400">← Volver</button>
-      <h1 className="text-lg font-black text-damm-ink">{nombre}</h1>
+      <button onClick={() => nav(-1)} className="mb-3 text-sm text-damm-faint transition hover:text-damm-muted">← Volver</button>
+      <h1 className="font-display text-2xl font-bold tracking-tight">{nombre}</h1>
 
-      <div className="my-4 grid grid-cols-3 gap-2 text-center">
-        <div className="card p-3">
-          <p className="text-xs text-gray-400">Total</p>
-          <p className="text-xl font-black text-damm-red">{total}</p>
+      <div className="my-5 grid grid-cols-3 divide-x divide-damm-line border-y border-damm-line">
+        <div className="px-3 py-4 text-center">
+          <p className="eyebrow text-damm-faint">Total</p>
+          <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-ink">{total}</p>
         </div>
-        <div className="card p-3">
-          <p className="text-xs text-gray-400">Sumados</p>
-          <p className="text-xl font-black text-green-600">+{sumados}</p>
+        <div className="px-3 py-4 text-center">
+          <p className="eyebrow text-damm-faint">Sumados</p>
+          <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-good">+{sumados}</p>
         </div>
-        <div className="card p-3">
-          <p className="text-xs text-gray-400">Restados</p>
-          <p className="text-xl font-black text-red-500">{restados}</p>
+        <div className="px-3 py-4 text-center">
+          <p className="eyebrow text-damm-faint">Restados</p>
+          <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-red">{restados}</p>
         </div>
       </div>
 
@@ -59,12 +59,12 @@ export default function JugadorDetalle() {
         {movs.length === 0 ? (
           <EmptyState>Sin movimientos todavía.</EmptyState>
         ) : (
-          <div className="card divide-y divide-gray-100">
+          <div className="card divide-y divide-white/5">
             {movs.map((m, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm text-damm-ink">{m.motivo || 'Ajuste manual'}</p>
-                  <p className="text-xs capitalize text-gray-400">{formatFecha(m.fecha)}</p>
+                  <p className="text-xs capitalize text-damm-faint">{formatFecha(m.fecha)}</p>
                 </div>
                 <Badge color={m.puntos >= 0 ? 'green' : 'red'}>
                   {m.puntos > 0 ? '+' : ''}{m.puntos}
