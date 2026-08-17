@@ -1,114 +1,157 @@
 # Estado del proyecto — Plataforma Cadet A · CF Damm
 
-_Última actualización: 15/08/2026_
+_Última actualización: 18/08/2026_
 
-Documento de **traspaso**. Si abres un chat nuevo (p.ej. en la app de escritorio
-de Claude Code), léelo entero junto con `docs/ESPECIFICACION.md` para ponerte al
-día del proyecto.
+Documento de **traspaso**. Si abres un chat nuevo (p. ej. en la app de escritorio
+de Claude Code), léelo entero junto con `docs/ESPECIFICACION.md`, `docs/BASE_DE_DATOS.md`
+y `docs/DESPLIEGUE.md` para ponerte al día.
 
 ---
 
 ## 0. Cómo CONTINUAR en un chat nuevo (leer primero)
 
 - **Repo:** https://github.com/axasts/Plataforma-Damm
-- **Rama con todo el código:** `claude/project-planning-nnsso1` (es la rama por
-  defecto; al clonar/descargar ya viene esta).
-- Abre la carpeta del proyecto con la **app de escritorio de Claude Code** y dile:
-  _"Lee `docs/ESTADO.md` y `docs/ESPECIFICACION.md` para ponerte al día y
-  seguimos."_
+- **Rama por defecto (y de despliegue):** `claude/project-planning-nnsso1`
+- **Web en producción:** https://plataforma-damm.vercel.app
+- Abre la carpeta del proyecto con la app de escritorio de Claude Code y di:
+  _"Lee `docs/ESTADO.md`, `docs/ESPECIFICACION.md`, `docs/BASE_DE_DATOS.md` y
+  `docs/DESPLIEGUE.md` para ponerte al día y seguimos."_
 
-## 1. Cómo DESCARGAR todo desde GitHub
+---
 
-**Opción A — ZIP (sin terminal):**
-1. Ve a https://github.com/axasts/Plataforma-Damm
-2. Botón verde **Code → Download ZIP**.
-3. Descomprime dentro de `Escritorio/hacker`.
-→ Tendrás `Escritorio/hacker/Plataforma-Damm` con todo.
+## 1. Qué es y stack
 
-**Opción B — git clone (terminal, permite recibir cambios con `git pull`):**
-```bash
-cd ~/Desktop/hacker
-git clone https://github.com/axasts/Plataforma-Damm.git
-```
+Web interna del **Cadet A del CF Damm** para el día a día de los entrenadores:
+clasificación por puntos, encuestas de **Wellness** y **RPE**, asistencia,
+lesiones y panel de estado del equipo.
 
-## 2. Qué es y stack
+- **Frontend:** React + Vite + TypeScript + Tailwind (interfaz en castellano).
+- **Backend:** Supabase (Auth + Postgres + RLS). Toda la lógica de datos vive ahí.
+- **Gráficas:** Recharts.
+- **Diseño:** tema **oscuro premium**. Tipografía **Archivo** (titulares) +
+  **Hanken Grotesk** (texto), ambas incrustadas en `src/assets/fonts/`. Escudo
+  oficial en `src/assets/escudo-damm.png` (login y favicon). Un solo rojo Damm
+  como acento; oro solo como filete. Sin cajas amontonadas: rejillas con filetes.
 
-Web interna del **Cadet A del CF Damm**: clasificación por puntos, encuestas de
-**Wellness** y **RPE**, asistencia, lesiones y panel de entrenador.
+---
 
-- **Frontend:** React + Vite + TypeScript + Tailwind (castellano, estética
-  rojo/oro del club).
-- **Backend:** Supabase (Auth + Postgres + RLS).
-- La especificación funcional completa está en `docs/ESPECIFICACION.md`.
+## 2. Modelo de uso (importante — cambió respecto al inicio)
+
+**El calendario es el centro de la gestión.** Ya no hay páginas sueltas de
+"Registrar puntos" ni de "Asistencia": todo se hace **entrando en la sesión** de
+un día desde el calendario.
+
+- **Menú de entrenador:** Panel · Calendario · Ranking · Lesiones · Sanciones
+  (catálogo) · Alertas · Plantilla.
+- **Calendario** = rejilla mensual navegable. Clic en un día:
+  - si hay 1 evento → abre su **sesión** (`/sesion/:id`);
+  - si no hay ninguno → botones para **añadir entrenamiento o partido** ese día.
+- **Sesión** (`src/pages/coach/Sesion.tsx`): según sea entrenamiento o partido:
+  - **Entrenamiento:** Disponibilidad (OK / lesión / no vino) · **+ Ejercicio**
+    (puntos positivos a varios jugadores) · **+ Sanción** (del catálogo, negativos).
+  - **Partido:** Convocatoria (convocado / no convocado) · **+ Sanción** (+ ejercicio).
+  - Todo queda ligado al evento (`puntos.evento_id`).
+- **Lesionados:** aparecen **premarcados** como lesionados en las sesiones y NO
+  hay que remarcarlos.
+- **Panel** (`CoachHome.tsx`): primero medias de **Wellness/RPE** del equipo
+  (gráficas filtrables) y **buscador por valor** (ej: fatiga ≥ 8 → qué jugadores);
+  luego **alertas**, **carga por demarcación** (con filtro de métrica) y
+  **encuestas pendientes**; y **media semanal para lesionados** (solo puntos de
+  ejercicios; las sanciones NO cuentan en el cálculo).
+- **Jugador:** solo ve **Inicio** (encuestas pendientes), **Ranking** y
+  **Mis datos** (evolución de wellness/RPE **+ desglose de sus puntos** con el
+  motivo). Las **posiciones NO las ven los jugadores** (solo entrenadores).
+- **Login:** el "Primer acceso" está oculto; solo aparece con el enlace
+  `…/?alta` (el que se reparte a los jugadores). Con la URL normal solo se ve
+  "Entrar".
+
+---
 
 ## 3. Credenciales y códigos
 
-- **Supabase URL y publishable key:** ya están en `src/config.ts` (la
-  publishable key es pública por diseño; la seguridad la dan las reglas RLS).
-- **Códigos de acceso:**
-  - Jugadores: `DAMM2026`
-  - Entrenadores: `STAFF2026`
+- **Supabase URL y publishable key:** en `src/config.ts` (públicas por diseño;
+  la seguridad la dan las reglas RLS). Se usa `||` para caer al valor por defecto
+  aunque una variable de entorno esté vacía en Vercel.
+- **Códigos de acceso:** Jugadores `DAMM2026` · Entrenadores `STAFF2026`.
 
-## 4. Arrancar en local
+---
+
+## 4. Puesta en marcha de la base de datos (Supabase)
+
+Ver `docs/BASE_DE_DATOS.md` para el detalle. Resumen:
+
+1. **`supabase/schema.sql`** → crea tablas, RLS, funciones y datos iniciales
+   (plantilla + entrenadores + catálogo de sanciones).
+2. Si actualizas una BD que ya existía (sin re-ejecutar schema): **`supabase/migracion_puntos_evento.sql`**
+   (añade `puntos.evento_id`).
+3. **Authentication → Sign In / Providers → Email:** activar Email y **desactivar
+   "Confirm email"**. ⚠️ Obligatorio para poder hacer login.
+4. (Opcional demo) `supabase/demo_seed.sql` (datos de ejemplo) y
+   `supabase/demo_users.sql` (logins jugador/admin ya confirmados).
+5. Para **empezar de cero** manteniendo plantilla/posiciones/códigos/catálogo:
+   **`supabase/limpiar_datos.sql`**.
+
+---
+
+## 5. Arrancar en local
 
 ```bash
 cd Plataforma-Damm
 npm install
-npm run dev
-```
-Abrir **http://localhost:5173**
-
-## 5. Puesta a punto de la base de datos (Supabase → SQL Editor)
-
-1. Ejecutar **`supabase/schema.sql`** → crea tablas, seguridad (RLS), funciones y
-   datos iniciales (plantilla + entrenadores + catálogo de sanciones).
-2. Ejecutar **`supabase/demo_seed.sql`** → rellena con datos de ejemplo (puntos,
-   wellness, RPE, alertas, una lesión y un "Entrenador Demo") para poder enseñar
-   la app. Se puede re-ejecutar; para dejar limpio, volver a correr `schema.sql`.
-3. **Authentication → Sign In / Providers → Email:** activar Email y **desactivar
-   "Confirm email"**. ⚠️ **Obligatorio**, sin esto no se puede hacer login.
-
-Para entrar: pantalla de login → **Primer acceso** → código `STAFF2026` → elegir
-**Entrenador Demo** → correo + contraseña → ves el panel completo.
-
-## 6. ✅ Hecho
-
-- Especificación funcional acordada.
-- App completa y compilando (jugador + entrenador).
-- Esquema Supabase (`schema.sql`) ejecutado con éxito en el proyecto.
-- Script de datos demo (`demo_seed.sql`).
-- Plantilla: 24 jugadores (con Antoni Capdevila; sin Sergi Cacho). Nombres y
-  posiciones editables por los entrenadores desde la pantalla **Plantilla**.
-- Corrección de portero (Antoni Capdevila) y baja de Sergi Cacho aplicadas al
-  código y a `schema.sql`.
-
-## 7. ⏳ Pendiente
-
-1. **Activar Email + desactivar "Confirm email"** en Supabase (bloquea el login).
-2. Ejecutar `schema.sql` (roster correcto) + `demo_seed.sql` (datos) en Supabase.
-3. **Revisión pantalla por pantalla** y ajustes (textos, grafías de nombres,
-   colores exactos del club si hace falta).
-4. (Opcional) Publicar online con Vercel/GitHub Pages para que otros entrenadores
-   entren desde el móvil. De momento se enseña en local.
-
-## 8. Estructura del código (recordatorio)
-
-```
-supabase/schema.sql        → base de datos + seguridad + datos iniciales
-supabase/demo_seed.sql     → datos de ejemplo para la demo
-src/config.ts              → credenciales Supabase (públicas)
-src/lib/                   → supabase client, auth, tipos, utilidades
-src/components/            → UI reutilizable + gráficas (StatsCharts)
-src/pages/Login.tsx        → login / alta con código
-src/pages/player/          → pantallas de jugador (home, wellness, rpe, stats)
-src/pages/coach/           → pantallas de entrenador (panel, puntos, catálogo,
-                             calendario, asistencia, lesiones, alertas, plantilla)
-src/pages/shared/          → clasificación y ficha de jugador
-.github/workflows/deploy.yml → deploy a GitHub Pages (solo manual ahora)
+npm run dev        # http://localhost:5173
+npm run build      # tsc -b && vite build (lo mismo que ejecuta Vercel)
 ```
 
-## 9. Workflow de trabajo
+⚠️ Si cambias `tailwind.config.js` (colores/fuentes), **reinicia** el dev server:
+el HMR no recarga bien los tokens nuevos (da un 500 tipo `border-… no existe`).
 
-- El código vive en GitHub, rama `claude/project-planning-nnsso1`.
-- Cuando se hacen cambios y se aprueban, se hace push; en local se recogen con
-  `git pull`.
+---
+
+## 6. Despliegue
+
+Ver `docs/DESPLIEGUE.md`. Resumen: Vercel despliega automáticamente al hacer
+**push a `claude/project-planning-nnsso1`**. Producción: https://plataforma-damm.vercel.app.
+Enlace de alta para jugadores: https://plataforma-damm.vercel.app/?alta
+
+---
+
+## 7. Estructura del código
+
+```
+supabase/schema.sql                 → base de datos + seguridad + datos iniciales
+supabase/migracion_puntos_evento.sql→ añade puntos.evento_id (BD ya existente)
+supabase/limpiar_datos.sql          → vacía datos de actividad (empezar de cero)
+supabase/demo_seed.sql              → datos de ejemplo (demo)
+supabase/demo_users.sql             → usuarios demo jugador/admin ya confirmados
+src/config.ts                       → credenciales Supabase (públicas)
+src/index.css / tailwind.config.js  → sistema de diseño (tokens, fuentes, clases)
+src/components/ui.tsx               → UI compartida (Escudo, Modal, PageHeader, Badge, iconos…)
+src/components/StatsCharts.tsx      → gráficas por jugador + medias de equipo (filtrables)
+src/pages/Login.tsx                 → login / alta con código (alta solo con ?alta)
+src/pages/player/                   → home (pendientes), wellness, rpe, mis datos
+src/pages/coach/                    → CoachHome (panel), Calendario, Sesion, Catalogo,
+                                      Lesiones, ReglasAlerta, Plantilla, CoachLayout
+src/pages/shared/                   → Clasificacion, JugadorDetalle
+```
+
+Nota: **ya no existen** `Puntos.tsx` ni `Asistencia.tsx` (integrados en `Sesion.tsx`).
+
+---
+
+## 8. ✅ Hecho
+
+- Rediseño completo (dark premium) aplicado a todas las pantallas.
+- Gestión de puntos/asistencia/convocatoria desde el calendario (sesiones).
+- Panel con medias de equipo, buscador por valor, carga por demarcación filtrable
+  y media semanal para lesionados.
+- Mis datos del jugador con desglose de puntos. Borrar jugadores. Lesionados
+  premarcados. Login con alta oculta (`?alta`).
+- Desplegado en Vercel y funcionando.
+
+## 9. ⏳ Pendiente / próximos pasos
+
+1. **Activar Email + desactivar "Confirm email"** en Supabase (si no está).
+2. **Empezar limpio** con `limpiar_datos.sql` cuando arranque el uso real.
+3. Revisar grafías de nombres y posiciones definitivas en **Plantilla**.
+4. (Opcional) Desvincular perfiles usados por la demo (ej: poner `user_id = null`).
+5. Afinar detalles a medida que el equipo lo use.

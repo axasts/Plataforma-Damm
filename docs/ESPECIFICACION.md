@@ -4,9 +4,33 @@ Especificació funcional del projecte. Document viu: recull tot el que hem
 acordat durant la planificació i serveix de guia per a la construcció.
 
 > **Idioma de la interfície:** castellà.
-> **Estat:** ✅ implementació inicial completada (one-shot) i pujada. Base de dades
-> Supabase creada (schema.sql executat amb èxit). Pendent: activar Email a Supabase
-> i revisió pantalla per pantalla. Veure `docs/ESTADO.md`.
+> **Estat:** ✅ implementat i **desplegat a producció** (https://plataforma-damm.vercel.app).
+> Rediseño visual (dark premium) aplicat i **model operatiu centrat en el calendari**
+> (veure §0). Pendent: activar Email a Supabase i començar amb dades netes.
+> Veure `docs/ESTADO.md`, `docs/BASE_DE_DATOS.md` i `docs/DESPLIEGUE.md`.
+
+---
+
+## 0. Modelo operativo actual (lo que manda hoy)
+
+Este apartado **actualiza** cómo funciona la app hoy; donde entre en conflicto con
+apartados posteriores (que describen la planificación inicial), manda este §0.
+
+- **El calendario es el centro.** No hay páginas sueltas de "Registrar puntos" ni
+  "Asistencia": todo se gestiona **entrando en la sesión** de un día.
+- **Sesión de entrenamiento:** disponibilidad (OK / lesión / no vino) + ejercicios
+  que puntúan (positivos) + sanciones (del catálogo, negativos).
+- **Sesión de partido:** convocatoria (convocado / no convocado) + sanciones (+ ejercicios).
+- Los **puntos quedan ligados al evento** (`puntos.evento_id`).
+- **Lesionados** salen **premarcados** en las sesiones (no hay que remarcarlos) y la
+  **media semanal** se les aplica desde el Panel (solo cuenta puntos de ejercicios;
+  las sanciones NO entran en el cálculo).
+- **Panel del entrenador:** medias de Wellness/RPE del equipo (gráficas filtrables),
+  buscador por valor (ej: fatiga ≥ 8 → jugadores), alertas, carga por demarcación
+  (filtrable) y encuestas pendientes.
+- **Jugador:** solo ve Inicio (pendientes), Ranking y Mis datos (evolución + desglose
+  de sus puntos con el motivo). **Las posiciones no las ven los jugadores.**
+- **Alta de jugadores:** solo por el enlace `…/?alta`; en la URL normal solo hay "Entrar".
 
 ---
 
@@ -314,14 +338,18 @@ Els entrenadors només marquen les excepcions (ràpid).
 
 ## 16. Fases de construcció
 
-1. ✅ **Base:** projecte + estil corporatiu + Supabase + login amb codis + càrrega de
-   plantilla.
-2. ✅ **Classificació** (catàleg de sancions + registre ràpid + positius + manual).
+1. ✅ **Base:** projecte + Supabase + login amb codis + càrrega de plantilla.
+2. ✅ **Classificació** (catàleg de sancions).
 3. ✅ **Enquestes + calendari + campaneta de pendents.**
-4. ✅ **Estadístiques del jugador** (gràfiques).
-5. ✅ **Panell d'entrenador** (estat d'equip + llindars + assistència + lesions).
+4. ✅ **Estadístiques del jugador** (gràfiques + desglossament de punts).
+5. ✅ **Panell d'entrenador** (mitjanes d'equip, cerca per valor, càrrega per
+   demarcació filtrable, alertes, pendents, mitjana setmanal de lesionats).
+6. ✅ **Rediseño visual** (dark premium, Archivo + Hanken, escut oficial).
+7. ✅ **Refactor centrat en el calendari** (sessions; fora Puntos i Asistencia
+   com a pàgines soltes) + `puntos.evento_id`.
+8. ✅ **Desplegat a Vercel** i funcionant.
 
-> Totes les fases implementades al one-shot inicial. Pendent de revisió i ajustos.
+> Veure `docs/ESTADO.md` §2 per al model operatiu actual (aquest §0 el resumeix).
 
 ---
 

@@ -2,66 +2,48 @@
 
 Web interna del equipo **Cadet A del CF Damm**: clasificación por puntos,
 encuestas de **Wellness** y **RPE**, asistencia, lesiones y panel de entrenador.
+Todo se gestiona **desde el calendario** (sesiones de entrenamiento y partido).
 
-- **Frontend:** React + Vite + TypeScript + Tailwind (en castellano).
+- **Frontend:** React + Vite + TypeScript + Tailwind (en castellano, tema oscuro).
 - **Backend:** Supabase (Auth + Postgres + RLS).
-- **Hosting:** GitHub Pages (gratis).
+- **Hosting:** Vercel — **producción:** https://plataforma-damm.vercel.app
 
-La especificación funcional completa está en [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md).
+## Documentación
 
----
+- [`docs/ESTADO.md`](docs/ESTADO.md) — estado actual y cómo continuar (traspaso).
+- [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md) — especificación funcional.
+- [`docs/BASE_DE_DATOS.md`](docs/BASE_DE_DATOS.md) — scripts SQL y arranque de la BD.
+- [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) — despliegue en Vercel y enlace de alta.
 
-## 1. Configurar Supabase (una vez)
-
-1. Crea un proyecto en [supabase.com](https://supabase.com) (región Europa).
-2. **SQL Editor → New query** → pega **todo** el contenido de
-   [`supabase/schema.sql`](supabase/schema.sql) y pulsa **Run**.
-   Esto crea las tablas, la seguridad (RLS), las funciones y los datos
-   iniciales (plantilla, entrenadores y catálogo de sanciones).
-3. **Authentication → Sign In / Providers → Email:** actívalo y **desactiva
-   "Confirm email"** (para que el alta sea directa con correo + contraseña).
-
-### Credenciales
-
-Las claves públicas ya están en [`src/config.ts`](src/config.ts) (la
-`publishable key` es pública por diseño; la seguridad la dan las reglas RLS).
-Si cambias de proyecto, edita ese fichero o define las variables de entorno
-`VITE_SUPABASE_URL` y `VITE_SUPABASE_KEY`.
-
-### Códigos de acceso
-
-- **Equipo (jugadores):** `DAMM2026`
-- **Entrenadores:** `STAFF2026`
-
-Se pueden cambiar en la tabla `equipo` (o desde Supabase). Los entrenadores
-también los ven en la pantalla **Plantilla**.
-
----
-
-## 2. Desarrollo local
+## Desarrollo local
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:5173
+npm run build      # tsc -b && vite build
 ```
 
-## 3. Desplegar en GitHub Pages
+> Si cambias `tailwind.config.js`, reinicia el dev server (el HMR no recarga bien
+> los tokens de color/fuente).
 
-1. En el repositorio: **Settings → Pages → Build and deployment → Source:
-   GitHub Actions**.
-2. Haz merge/push a la rama `main`. El workflow
-   [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compila y
-   publica automáticamente.
-3. La web quedará en `https://axasts.github.io/Plataforma-Damm/`.
+## Puesta en marcha (resumen)
 
----
+1. Ejecutar [`supabase/schema.sql`](supabase/schema.sql) en Supabase (crea todo).
+2. Supabase → Authentication → Providers → **Email activado** y **"Confirm email"
+   desactivado** (obligatorio para los logins).
+3. Para empezar el uso real con datos limpios: [`supabase/limpiar_datos.sql`](supabase/limpiar_datos.sql).
+
+Códigos: jugadores `DAMM2026` · entrenadores `STAFF2026`.
 
 ## Cómo se usa
 
-- **Primer acceso** (jugador o entrenador): pantalla de login → *Primer
-  acceso* → introduce el código → elige tu nombre → crea correo + contraseña.
-- **Jugadores:** ven la clasificación pública, rellenan sus encuestas
-  (campana de pendientes) y consultan solo sus estadísticas.
-- **Entrenadores** (Ruben, Xavi, Alex): panel con alertas de picos, pendientes
-  del equipo y carga por posición, además de puntos, calendario, asistencia,
-  lesiones, catálogo de sanciones, alertas y plantilla.
+- **Jugadores:** entran por el enlace de alta `…/?alta` la primera vez (código
+  `DAMM2026` → elegir nombre → correo + contraseña). Después ven **Inicio**
+  (encuestas pendientes), **Ranking** y **Mis datos** (evolución + desglose de
+  sus puntos). No ven las posiciones.
+- **Entrenadores:** **Panel** (medias de equipo, buscador por valor, alertas,
+  carga por demarcación, media semanal de lesionados), **Calendario** (crea
+  sesiones y gestiona disponibilidad, ejercicios y sanciones desde cada día),
+  **Ranking**, **Lesiones**, **Sanciones** (catálogo), **Alertas** y **Plantilla**.
+
+El despliegue es automático al hacer push a `claude/project-planning-nnsso1`.
