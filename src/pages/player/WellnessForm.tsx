@@ -84,12 +84,9 @@ export default function WellnessForm() {
 
       {error && <div className="mt-5 rounded-lg border border-damm-red/30 bg-damm-red/10 px-3 py-2 text-sm text-[#ff8a95]">{error}</div>}
 
-      {/* Barra de envío fija abajo */}
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-lg border-t border-damm-line bg-damm-bg/90 px-4 py-3 backdrop-blur">
-        <button className="btn-primary w-full" disabled={!completo || guardando} onClick={guardar}>
-          {guardando ? 'Guardando…' : completo ? 'Enviar wellness' : `Faltan ${METRICAS_WELLNESS.length - hechas} respuestas`}
-        </button>
-      </div>
+      <button className="btn-primary mt-6 w-full py-3" disabled={!completo || guardando} onClick={guardar}>
+        {guardando ? 'Guardando…' : completo ? 'Enviar wellness' : `Faltan ${METRICAS_WELLNESS.length - hechas} respuestas`}
+      </button>
     </div>
   )
 }
