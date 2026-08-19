@@ -20,6 +20,7 @@ export default function Sesion() {
   const [puntos, setPuntos] = useState<Punto[]>([])
   const [estados, setEstados] = useState<Record<string, Estado>>({}) // entreno: asistencia
   const [desc, setDesc] = useState<Set<string>>(new Set())           // partido: no convocados
+  const [exen, setExen] = useState<Set<string>>(new Set())           // encuestas excusadas: `${pid}:${tipo}`
   const [lesionados, setLesionados] = useState<Set<string>>(new Set()) // lesión activa en la fecha
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState<null | 'ejercicio' | 'sancion'>(null)
@@ -52,6 +53,9 @@ export default function Sesion() {
         ;((data as any[]) ?? []).forEach((r) => (mp[r.profile_id] = r.estado))
         setEstados(mp)
       }
+      // Encuestas excusadas por el entrenador para este evento
+      const { data: ex } = await supabase.from('exenciones').select('profile_id,tipo').eq('evento_id', eventoId)
+      setExen(new Set(((ex as any[]) ?? []).map((x) => `${x.profile_id}:${x.tipo}`)))
       // Lesiones activas en la fecha del evento → pre-marcar como lesionado
       const { data: les } = await supabase.from('lesiones').select('profile_id').lte('fecha_inicio', e.fecha).gte('fecha_fin', e.fecha)
       setLesionados(new Set(((les as any[]) ?? []).map((x) => x.profile_id)))
@@ -84,6 +88,31 @@ export default function Sesion() {
     }
   }
 
+  async function toggleExencion(pid: string, tipo: 'wellness' | 'rpe') {
+    const key = `${pid}:${tipo}`
+    if (exen.has(key)) {
+      await supabase.from('exenciones').delete().eq('evento_id', ev.id).eq('profile_id', pid).eq('tipo', tipo)
+      setExen((s) => { const n = new Set(s); n.delete(key); return n })
+    } else {
+      await supabase.from('exenciones').insert({ evento_id: ev.id, profile_id: pid, tipo })
+      setExen((s) => new Set(s).add(key))
+    }
+  }
+
+  // Excusa (o vuelve a exigir) una encuesta a TODA la plantilla de golpe.
+  async function excusarTodos(tipo: 'wellness' | 'rpe', excusar: boolean) {
+    if (excusar) {
+      const nuevos = jugadores.filter((j) => !exen.has(`${j.id}:${tipo}`))
+      if (nuevos.length > 0) {
+        await supabase.from('exenciones').insert(nuevos.map((j) => ({ evento_id: ev.id, profile_id: j.id, tipo })))
+      }
+      setExen((s) => { const n = new Set(s); jugadores.forEach((j) => n.add(`${j.id}:${tipo}`)); return n })
+    } else {
+      await supabase.from('exenciones').delete().eq('evento_id', ev.id).eq('tipo', tipo)
+      setExen((s) => { const n = new Set(s); jugadores.forEach((j) => n.delete(`${j.id}:${tipo}`)); return n })
+    }
+  }
+
   async function aplicar(pids: string[], pts: number, motivo: string, motivo_id: string | null) {
     if (pids.length === 0) return
     const filas = pids.map((pid) => ({
@@ -101,6 +130,8 @@ export default function Sesion() {
   }
 
   const convocados = jugadores.length - desc.size
+  const wellnessExcusados = jugadores.filter((j) => exen.has(`${j.id}:wellness`)).length
+  const rpeExcusados = jugadores.filter((j) => exen.has(`${j.id}:rpe`)).length
 
   return (
     <div>
@@ -149,6 +180,37 @@ export default function Sesion() {
         </div>
       </section>
 
+      {/* Encuestas: excusar wellness / RPE (deja de salir como pendiente) */}
+      <section className="mb-9">
+        <div className="mb-1 flex items-center justify-between border-b border-damm-line2 pb-2">
+          <h2 className="eyebrow text-damm-muted">Encuestas pendientes</h2>
+          <span className="text-xs tabular-nums text-damm-faint">
+            {jugadores.length - wellnessExcusados}·W {jugadores.length - rpeExcusados}·R exigidas
+          </span>
+        </div>
+        <p className="mb-3 mt-2 text-xs text-damm-faint">
+          Excusa una encuesta y ese jugador dejará de tenerla como pendiente para esta sesión. No afecta a puntos ni asistencia.
+        </p>
+
+        {/* Acciones rápidas para toda la plantilla */}
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <BulkBtn label="Wellness" excusados={wellnessExcusados} total={jugadores.length} onExcusar={() => excusarTodos('wellness', true)} onExigir={() => excusarTodos('wellness', false)} />
+          <BulkBtn label="RPE" excusados={rpeExcusados} total={jugadores.length} onExcusar={() => excusarTodos('rpe', true)} onExigir={() => excusarTodos('rpe', false)} />
+        </div>
+
+        <div className="divide-y divide-damm-line">
+          {jugadores.map((j) => (
+            <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
+              <span className="min-w-0 flex-1 truncate text-sm text-damm-ink">{j.nombre}</span>
+              <div className="flex gap-1.5">
+                <EncBtn label="Wellness" excusado={exen.has(`${j.id}:wellness`)} onClick={() => toggleExencion(j.id, 'wellness')} />
+                <EncBtn label="RPE" excusado={exen.has(`${j.id}:rpe`)} onClick={() => toggleExencion(j.id, 'rpe')} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Puntos de la sesión */}
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between border-b border-damm-line2 pb-2">
@@ -190,6 +252,40 @@ export default function Sesion() {
 function EstBtn({ on, cls, onClick, children }: { on: boolean; cls: string; onClick: () => void; children: ReactNode }) {
   return (
     <button onClick={onClick} className={'rounded-md px-2.5 py-1 transition ' + (on ? cls : 'text-damm-muted hover:text-damm-ink')}>{children}</button>
+  )
+}
+
+// Toggle por jugador: exigida (activo) ↔ excusada.
+function EncBtn({ label, excusado, onClick }: { label: string; excusado: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      title={excusado ? `${label} excusada · pulsa para volver a exigirla` : `${label} exigida · pulsa para excusar`}
+      className={
+        'rounded-md px-2.5 py-1 text-xs font-semibold transition ' +
+        (excusado
+          ? 'text-damm-faint line-through hover:text-damm-ink'
+          : 'bg-damm-good/15 text-damm-good hover:bg-damm-good/25')
+      }
+    >
+      {label}
+    </button>
+  )
+}
+
+// Acción rápida para toda la plantilla.
+function BulkBtn({ label, excusados, total, onExcusar, onExigir }: {
+  label: string; excusados: number; total: number; onExcusar: () => void; onExigir: () => void
+}) {
+  const todos = total > 0 && excusados === total
+  return (
+    <button
+      onClick={todos ? onExigir : onExcusar}
+      className="rounded-lg border border-damm-line bg-white/[0.03] px-3 py-2 text-xs font-semibold text-damm-muted transition hover:text-damm-ink"
+    >
+      {todos ? `Exigir ${label} a todos` : `Excusar ${label} a todos`}
+      {excusados > 0 && !todos && <span className="ml-1 text-damm-faint">({excusados}/{total})</span>}
+    </button>
   )
 }
 

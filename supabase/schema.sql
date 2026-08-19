@@ -12,6 +12,7 @@
 
 -- ---------- NETEJA (per poder re-executar en desenvolupament) ----------------
 drop table if exists asistencia      cascade;
+drop table if exists exenciones      cascade;
 drop table if exists lesiones        cascade;
 drop table if exists rpe             cascade;
 drop table if exists wellness        cascade;
@@ -65,6 +66,17 @@ create table desconvocados (
   evento_id   uuid references eventos(id)  on delete cascade,
   profile_id  uuid references perfiles(id) on delete cascade,
   primary key (evento_id, profile_id)
+);
+
+-- Exempcions d'enquesta: l'entrenador excusa un jugador d'una enquesta concreta
+-- (wellness o rpe) per a un esdeveniment → deixa d'aparèixer com a pendent.
+-- A diferència de 'desconvocados', permet excusar només wellness o només RPE.
+create table exenciones (
+  evento_id   uuid references eventos(id)  on delete cascade,
+  profile_id  uuid references perfiles(id) on delete cascade,
+  tipo        text not null check (tipo in ('wellness','rpe')),
+  created_at  timestamptz default now(),
+  primary key (evento_id, profile_id, tipo)
 );
 
 -- Catàleg de motius de punts (sancions i premis). Editable.
@@ -260,13 +272,15 @@ begin
     from eventos e
     where e.fecha <= current_date
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
+      and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'wellness')
       and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p_profile)
     union all
-    -- RPE pendents (exclou desconvocats i lesionats en aquella data)
+    -- RPE pendents (exclou desconvocats, exempts i lesionats en aquella data)
     select e.id, 'rpe'::text, e.fecha, e.titulo, e.tipo
     from eventos e
     where e.fecha <= current_date
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
+      and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'rpe')
       and not exists (select 1 from lesiones l where l.profile_id = p_profile and e.fecha between l.fecha_inicio and l.fecha_fin)
       and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p_profile)
     order by fecha desc;
@@ -284,10 +298,12 @@ begin
       (select count(*) from eventos e
         where e.fecha <= current_date
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
+          and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'wellness')
           and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p.id))::int,
       (select count(*) from eventos e
         where e.fecha <= current_date
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
+          and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'rpe')
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
           and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p.id))::int
     from perfiles p
@@ -328,6 +344,7 @@ alter table puntos         enable row level security;
 alter table wellness       enable row level security;
 alter table rpe            enable row level security;
 alter table asistencia     enable row level security;
+alter table exenciones     enable row level security;
 alter table lesiones       enable row level security;
 alter table reglas_alerta  enable row level security;
 
@@ -348,6 +365,10 @@ create policy eventos_coach on eventos for all using (is_coach()) with check (is
 -- desconvocados
 create policy desconv_read on desconvocados for select using (auth.uid() is not null);
 create policy desconv_coach on desconvocados for all using (is_coach()) with check (is_coach());
+
+-- exenciones: lectura per a qualsevol usuari; escriptura només entrenadors.
+create policy exenciones_read on exenciones for select using (auth.uid() is not null);
+create policy exenciones_coach on exenciones for all using (is_coach()) with check (is_coach());
 
 -- motivos_puntos
 create policy motivos_read on motivos_puntos for select using (auth.uid() is not null);
