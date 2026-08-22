@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Perfil } from '../../lib/types'
 import { Spinner, Badge, Modal, IconEdit, IconTrash, PageHeader } from '../../components/ui'
+import { ordenPosicion, POSICIONES } from '../../lib/utils'
 
 export default function Plantilla() {
   const [perfiles, setPerfiles] = useState<Perfil[]>([])
@@ -39,6 +40,12 @@ export default function Plantilla() {
     if (!porPosicion.has(pos)) porPosicion.set(pos, [])
     porPosicion.get(pos)!.push(p)
   }
+  // Orden por líneas: porteros → centrales → laterales → pivote → interiores
+  // → punta → extremos, y dentro de cada línea primero el derecho.
+  const gruposOrdenados = [...porPosicion.entries()].sort((a, b) => {
+    const oa = ordenPosicion(a[0]), ob = ordenPosicion(b[0])
+    return oa !== ob ? oa - ob : a[0].localeCompare(b[0], 'es')
+  })
 
   return (
     <div>
@@ -62,7 +69,7 @@ export default function Plantilla() {
       )}
 
       <div className="space-y-7">
-        {[...porPosicion.entries()].map(([pos, list]) => (
+        {gruposOrdenados.map(([pos, list]) => (
           <div key={pos}>
             <div className="mb-1 flex items-baseline justify-between border-b border-damm-line2 pb-2">
               <h2 className="eyebrow text-damm-muted">{pos}</h2>
@@ -122,7 +129,10 @@ function EditarJugadorModal({ perfil, onClose, onSaved }: {
         </div>
         <div>
           <label className="label">Posición (solo la ven los entrenadores)</label>
-          <input className="input" value={posicion} onChange={(e) => setPosicion(e.target.value)} placeholder="Ej: Lateral derecho" />
+          <input className="input" list="lista-posiciones" value={posicion} onChange={(e) => setPosicion(e.target.value)} placeholder="Ej: Lateral derecho" />
+          <datalist id="lista-posiciones">
+            {POSICIONES.map((p) => <option key={p} value={p} />)}
+          </datalist>
         </div>
         <button className="btn-primary w-full" disabled={!nombre.trim() || guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar'}</button>
       </div>
