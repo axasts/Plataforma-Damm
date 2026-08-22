@@ -15,6 +15,7 @@ import Catalogo from './pages/coach/Catalogo'
 import Calendario from './pages/coach/Calendario'
 import Sesion from './pages/coach/Sesion'
 import Lesiones from './pages/coach/Lesiones'
+import Encuestas from './pages/coach/Encuestas'
 import ReglasAlerta from './pages/coach/ReglasAlerta'
 import Plantilla from './pages/coach/Plantilla'
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/catalogo" element={<Catalogo />} />
           <Route path="/calendario" element={<Calendario />} />
           <Route path="/sesion/:eventoId" element={<Sesion />} />
+          <Route path="/encuestas" element={<Encuestas />} />
           <Route path="/lesiones" element={<Lesiones />} />
           <Route path="/alertas" element={<ReglasAlerta />} />
           <Route path="/plantilla" element={<Plantilla />} />

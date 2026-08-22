@@ -5,6 +5,7 @@ import { Escudo } from '../../components/ui'
 const LINKS = [
   { to: '/', label: 'Panel', end: true },
   { to: '/calendario', label: 'Calendario' },
+  { to: '/encuestas', label: 'Encuestas' },
   { to: '/clasificacion', label: 'Ranking' },
   { to: '/lesiones', label: 'Lesiones' },
   { to: '/catalogo', label: 'Sanciones' },
