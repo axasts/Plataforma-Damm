@@ -188,9 +188,9 @@ function Columna({ titulo, filas }: { titulo: string; filas: { jug: Jug; estado:
         <p className="text-xs text-damm-faint">No se pide a nadie (todos exentos/lesionados/no convocados).</p>
       ) : (
         <div className="space-y-2.5">
-          <Grupo label="Fuera de plazo" tone="bad" items={fuera.map((f) => f.jug.nombre)} />
-          <Grupo label="Pendiente (aún a tiempo)" tone="mut" items={pend.map((f) => f.jug.nombre)} />
-          <Grupo label="Respondió tarde" tone="warn" items={tarde.map((f) => f.jug.nombre)} />
+          <Grupo label="Fuera de plazo" tone="bad" items={fuera.map((f) => f.jug)} />
+          <Grupo label="Pendiente (aún a tiempo)" tone="mut" items={pend.map((f) => f.jug)} />
+          <Grupo label="Respondió tarde" tone="warn" items={tarde.map((f) => f.jug)} />
           {fuera.length === 0 && pend.length === 0 && (
             <p className="text-xs font-semibold text-damm-good">Todas respondidas ✓</p>
           )}
@@ -200,7 +200,7 @@ function Columna({ titulo, filas }: { titulo: string; filas: { jug: Jug; estado:
   )
 }
 
-function Grupo({ label, tone, items }: { label: string; tone: 'bad' | 'warn' | 'mut'; items: string[] }) {
+function Grupo({ label, tone, items }: { label: string; tone: 'bad' | 'warn' | 'mut'; items: Jug[] }) {
   if (items.length === 0) return null
   const dot = { bad: 'bg-damm-red', warn: 'bg-damm-gold', mut: 'bg-white/25' }[tone]
   const txt = { bad: 'text-damm-red', warn: 'text-damm-gold', mut: 'text-damm-faint' }[tone]
@@ -208,10 +208,10 @@ function Grupo({ label, tone, items }: { label: string; tone: 'bad' | 'warn' | '
     <div>
       <p className={'mb-1 text-[11px] font-semibold uppercase tracking-wide ' + txt}>{label} · {items.length}</p>
       <div className="flex flex-wrap gap-1.5">
-        {items.map((n) => (
-          <span key={n} className="flex items-center gap-1.5 rounded-md border border-damm-line bg-white/[0.03] px-2 py-1 text-xs text-damm-ink">
-            <span className={'h-1.5 w-1.5 rounded-full ' + dot} />{n}
-          </span>
+        {items.map((j) => (
+          <Link key={j.id} to={`/jugador/${j.id}`} className="flex items-center gap-1.5 rounded-md border border-damm-line bg-white/[0.03] px-2 py-1 text-xs text-damm-ink transition hover:border-damm-red/40 hover:text-damm-red">
+            <span className={'h-1.5 w-1.5 rounded-full ' + dot} />{j.nombre}
+          </Link>
         ))}
       </div>
     </div>

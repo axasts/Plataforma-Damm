@@ -1,5 +1,5 @@
 import { useEffect, useState, ReactNode } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { Evento, Motivo } from '../../lib/types'
@@ -200,7 +200,7 @@ export default function Sesion() {
           {jugadores.map((j) => esPartido ? (
             <div key={j.id} className="flex items-center justify-between py-2.5">
               <span className="flex items-center gap-2">
-                <span className={'text-sm ' + (lesionados.has(j.id) || desc.has(j.id) ? 'text-damm-faint line-through' : 'text-damm-ink')}>{j.nombre}</span>
+                <Link to={`/jugador/${j.id}`} className={'text-sm transition hover:text-damm-red ' + (lesionados.has(j.id) || desc.has(j.id) ? 'text-damm-faint line-through' : 'text-damm-ink')}>{j.nombre}</Link>
                 {lesionados.has(j.id) && <span className="chip bg-damm-gold/15 text-damm-gold">Lesión</span>}
               </span>
               {lesionados.has(j.id) ? (
@@ -217,7 +217,7 @@ export default function Sesion() {
           ) : (
             <div key={j.id} className="flex items-center justify-between py-2.5">
               <span className="flex items-center gap-2">
-                <span className="text-sm text-damm-ink">{j.nombre}</span>
+                <Link to={`/jugador/${j.id}`} className="text-sm text-damm-ink transition hover:text-damm-red">{j.nombre}</Link>
                 {lesionados.has(j.id) && <span className="chip bg-damm-gold/15 text-damm-gold">Lesión</span>}
               </span>
               <div className="flex gap-1 rounded-lg border border-damm-line bg-white/[0.03] p-0.5 text-xs font-semibold">
@@ -243,7 +243,7 @@ export default function Sesion() {
           <div className="divide-y divide-damm-line">
             {disponibles.filter((j) => !desc.has(j.id)).map((j) => (
               <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
-                <span className="min-w-0 flex-1 truncate text-sm text-damm-ink">{j.nombre}</span>
+                <Link to={`/jugador/${j.id}`} className="min-w-0 flex-1 truncate text-sm text-damm-ink transition hover:text-damm-red">{j.nombre}</Link>
                 <div className="flex items-center gap-2">
                   <input
                     type="number" min={0} max={200} inputMode="numeric"
@@ -284,7 +284,7 @@ export default function Sesion() {
             const pide = seLePide(j)
             return (
               <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
-                <span className={'min-w-0 flex-1 truncate text-sm ' + (pide ? 'text-damm-ink' : 'text-damm-faint line-through')}>{j.nombre}</span>
+                <Link to={`/jugador/${j.id}`} className={'min-w-0 flex-1 truncate text-sm transition hover:text-damm-red ' + (pide ? 'text-damm-ink' : 'text-damm-faint line-through')}>{j.nombre}</Link>
                 {pide ? (
                   <div className="flex gap-1.5">
                     <EncBtn label="Wellness" excusado={exen.has(`${j.id}:wellness`)} onClick={() => toggleExencion(j.id, 'wellness')} />
@@ -318,7 +318,7 @@ export default function Sesion() {
             {puntos.map((p) => (
               <div key={p.id} className="flex items-center gap-3 border-b border-damm-line py-2.5">
                 <span className="min-w-0 flex-1 truncate text-sm text-damm-ink">
-                  {nombreDe(p.profile_id)} <span className="text-damm-faint">· {p.motivo}</span>
+                  <Link to={`/jugador/${p.profile_id}`} className="transition hover:text-damm-red">{nombreDe(p.profile_id)}</Link> <span className="text-damm-faint">· {p.motivo}</span>
                 </span>
                 <span className={'font-display text-base font-bold tabular-nums ' + (p.puntos >= 0 ? 'text-damm-good' : 'text-damm-red')}>
                   {p.puntos > 0 ? '+' : ''}{p.puntos}
