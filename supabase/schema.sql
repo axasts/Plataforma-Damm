@@ -278,22 +278,25 @@ begin
     raise exception 'No autorizado';
   end if;
   return query
-    -- Wellness pendents (exclou desconvocats, exempts i lesionats en aquella data)
+    -- Wellness pendents (exclou desconvocats, exempts, lesionats de període i
+    -- els marcats com a lesionat/no vingut a l'assistència d'aquell event)
     select e.id, 'wellness'::text, e.fecha, e.titulo, e.tipo
     from eventos e
     where e.fecha <= current_date
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
       and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'wellness')
       and not exists (select 1 from lesiones l where l.profile_id = p_profile and e.fecha between l.fecha_inicio and l.fecha_fin)
+      and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p_profile and a.estado in ('lesionado','no_vino'))
       and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p_profile)
     union all
-    -- RPE pendents (exclou desconvocats, exempts i lesionats en aquella data)
+    -- RPE pendents (mateixes exclusions)
     select e.id, 'rpe'::text, e.fecha, e.titulo, e.tipo
     from eventos e
     where e.fecha <= current_date
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
       and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'rpe')
       and not exists (select 1 from lesiones l where l.profile_id = p_profile and e.fecha between l.fecha_inicio and l.fecha_fin)
+      and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p_profile and a.estado in ('lesionado','no_vino'))
       and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p_profile)
     order by fecha desc;
 end;
@@ -312,12 +315,14 @@ begin
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
           and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'wellness')
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
+          and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p.id and a.estado in ('lesionado','no_vino'))
           and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p.id))::int,
       (select count(*) from eventos e
         where e.fecha <= current_date
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
           and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'rpe')
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
+          and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p.id and a.estado in ('lesionado','no_vino'))
           and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p.id))::int
     from perfiles p
     where p.rol = 'jugador' and not p.demo

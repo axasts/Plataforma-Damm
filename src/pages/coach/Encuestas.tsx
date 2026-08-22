@@ -21,6 +21,7 @@ export default function Encuestas() {
   const [rpe, setRpe] = useState<Resp[]>([])
   const [desc, setDesc] = useState<Set<string>>(new Set())     // `${evento}:${pid}`
   const [exen, setExen] = useState<Set<string>>(new Set())     // `${evento}:${pid}:${tipo}`
+  const [asis, setAsis] = useState<Set<string>>(new Set())     // `${evento}:${pid}` lesionado/no_vino
   const [lesiones, setLesiones] = useState<Lesion[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -32,13 +33,14 @@ export default function Encuestas() {
     const listaEv = (evs as Evento[]) ?? []
     const ids = listaEv.map((e) => e.id)
 
-    const [jRes, wRes, rRes, dRes, xRes, lRes] = await Promise.all([
+    const [jRes, wRes, rRes, dRes, xRes, lRes, asRes] = await Promise.all([
       supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').eq('demo', false).order('nombre'),
       supabase.from('wellness').select('profile_id,evento_id,a_tiempo').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
       supabase.from('rpe').select('profile_id,evento_id,a_tiempo').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
       supabase.from('desconvocados').select('evento_id,profile_id').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
       supabase.from('exenciones').select('evento_id,profile_id,tipo').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
       supabase.from('lesiones').select('profile_id,fecha_inicio,fecha_fin').lte('fecha_inicio', hoy).gte('fecha_fin', desde),
+      supabase.from('asistencia').select('evento_id,profile_id,estado').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
     ])
 
     setEventos(listaEv)
@@ -47,6 +49,7 @@ export default function Encuestas() {
     setRpe((rRes.data as Resp[]) ?? [])
     setDesc(new Set(((dRes.data as any[]) ?? []).map((x) => `${x.evento_id}:${x.profile_id}`)))
     setExen(new Set(((xRes.data as any[]) ?? []).map((x) => `${x.evento_id}:${x.profile_id}:${x.tipo}`)))
+    setAsis(new Set(((asRes.data as any[]) ?? []).filter((x) => x.estado === 'lesionado' || x.estado === 'no_vino').map((x) => `${x.evento_id}:${x.profile_id}`)))
     setLesiones((lRes.data as Lesion[]) ?? [])
     setCargando(false)
   }
@@ -75,6 +78,7 @@ export default function Encuestas() {
       // ¿Se le pide? No si desconvocado, exento o lesionado ese día.
       if (desc.has(`${ev.id}:${j.id}`)) continue
       if (exen.has(`${ev.id}:${j.id}:${tipo}`)) continue
+      if (asis.has(`${ev.id}:${j.id}`)) continue
       if (lesionado(j.id, ev.fecha)) continue
       const r = respuestas.find((x) => x.evento_id === ev.id && x.profile_id === j.id)
       let estado: Estado
