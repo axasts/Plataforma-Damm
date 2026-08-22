@@ -169,6 +169,12 @@ export default function Sesion() {
     ? (!desc.has(j.id) && !lesionados.has(j.id))
     : estadoEfectivo(j.id) === 'ok'
   const pedibles = jugadores.filter(seLePide)
+  // Motivo por el que a un jugador no se le pide encuesta (para mostrarlo tachado).
+  const motivoNoPedible = (j: Jug): string => {
+    if (lesionados.has(j.id)) return 'Lesión'
+    if (esPartido) return desc.has(j.id) ? 'No convocado' : ''
+    return estadoEfectivo(j.id) === 'no_vino' ? 'No vino' : (estadoEfectivo(j.id) === 'lesionado' ? 'Lesión' : '')
+  }
   const wellnessExcusados = pedibles.filter((j) => exen.has(`${j.id}:wellness`)).length
   const rpeExcusados = pedibles.filter((j) => exen.has(`${j.id}:rpe`)).length
 
@@ -274,15 +280,25 @@ export default function Sesion() {
         </div>
 
         <div className="divide-y divide-damm-line">
-          {pedibles.map((j) => (
-            <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
-              <span className="min-w-0 flex-1 truncate text-sm text-damm-ink">{j.nombre}</span>
-              <div className="flex gap-1.5">
-                <EncBtn label="Wellness" excusado={exen.has(`${j.id}:wellness`)} onClick={() => toggleExencion(j.id, 'wellness')} />
-                <EncBtn label="RPE" excusado={exen.has(`${j.id}:rpe`)} onClick={() => toggleExencion(j.id, 'rpe')} />
+          {jugadores.map((j) => {
+            const pide = seLePide(j)
+            return (
+              <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
+                <span className={'min-w-0 flex-1 truncate text-sm ' + (pide ? 'text-damm-ink' : 'text-damm-faint line-through')}>{j.nombre}</span>
+                {pide ? (
+                  <div className="flex gap-1.5">
+                    <EncBtn label="Wellness" excusado={exen.has(`${j.id}:wellness`)} onClick={() => toggleExencion(j.id, 'wellness')} />
+                    <EncBtn label="RPE" excusado={exen.has(`${j.id}:rpe`)} onClick={() => toggleExencion(j.id, 'rpe')} />
+                  </div>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <span className="chip bg-damm-gold/15 text-damm-gold">{motivoNoPedible(j)}</span>
+                    <span className="text-xs text-damm-faint">No se le pide</span>
+                  </span>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 
