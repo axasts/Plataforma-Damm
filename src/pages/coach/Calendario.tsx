@@ -36,7 +36,9 @@ export default function Calendario() {
   }
 
   async function borrar(id: string) {
-    await supabase.from('eventos').delete().eq('id', id)
+    if (!window.confirm('¿Eliminar este evento? Se borrarán también sus wellness, RPE, asistencia y minutos. No se puede deshacer.')) return
+    const { error } = await supabase.from('eventos').delete().eq('id', id)
+    if (error) { setMensaje('No se pudo eliminar: ' + error.message); return }
     cargar()
   }
 
