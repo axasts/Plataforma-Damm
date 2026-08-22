@@ -124,7 +124,13 @@ export default function Sesion() {
   // Excusa (o vuelve a exigir) una encuesta a los jugadores a los que se les
   // pide (convocados y sanos), de golpe.
   async function excusarTodos(tipo: 'wellness' | 'rpe', excusar: boolean) {
-    const objetivo = jugadores.filter((j) => !lesionados.has(j.id) && !desc.has(j.id))
+    const esP = ev.tipo === 'partido'
+    const objetivo = jugadores.filter((j) => {
+      if (lesionados.has(j.id)) return false
+      if (esP) return !desc.has(j.id)
+      const e = estados[j.id]
+      return e !== 'lesionado' && e !== 'no_vino'
+    })
     if (excusar) {
       const nuevos = objetivo.filter((j) => !exen.has(`${j.id}:${tipo}`))
       if (nuevos.length > 0) {
@@ -156,8 +162,13 @@ export default function Sesion() {
   // Un jugador lesionado NO está disponible para ser convocado.
   const disponibles = jugadores.filter((j) => !lesionados.has(j.id))
   const convocados = disponibles.filter((j) => !desc.has(j.id)).length
-  // A quién SE LE PIDE encuesta: convocados y no lesionados (a los demás no).
-  const pedibles = disponibles.filter((j) => !desc.has(j.id))
+  // A quién SE LE PIDE encuesta:
+  //  · partido → convocados y no lesionados (de periodo)
+  //  · entreno → los que están 'ok' en asistencia (ni lesión ni no vino)
+  const seLePide = (j: Jug) => esPartido
+    ? (!desc.has(j.id) && !lesionados.has(j.id))
+    : estadoEfectivo(j.id) === 'ok'
+  const pedibles = jugadores.filter(seLePide)
   const wellnessExcusados = pedibles.filter((j) => exen.has(`${j.id}:wellness`)).length
   const rpeExcusados = pedibles.filter((j) => exen.has(`${j.id}:rpe`)).length
 
