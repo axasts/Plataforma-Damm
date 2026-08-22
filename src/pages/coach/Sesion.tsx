@@ -121,17 +121,19 @@ export default function Sesion() {
     }
   }
 
-  // Excusa (o vuelve a exigir) una encuesta a TODA la plantilla de golpe.
+  // Excusa (o vuelve a exigir) una encuesta a los jugadores a los que se les
+  // pide (convocados y sanos), de golpe.
   async function excusarTodos(tipo: 'wellness' | 'rpe', excusar: boolean) {
+    const objetivo = jugadores.filter((j) => !lesionados.has(j.id) && !desc.has(j.id))
     if (excusar) {
-      const nuevos = jugadores.filter((j) => !exen.has(`${j.id}:${tipo}`))
+      const nuevos = objetivo.filter((j) => !exen.has(`${j.id}:${tipo}`))
       if (nuevos.length > 0) {
         await supabase.from('exenciones').insert(nuevos.map((j) => ({ evento_id: ev.id, profile_id: j.id, tipo })))
       }
-      setExen((s) => { const n = new Set(s); jugadores.forEach((j) => n.add(`${j.id}:${tipo}`)); return n })
+      setExen((s) => { const n = new Set(s); objetivo.forEach((j) => n.add(`${j.id}:${tipo}`)); return n })
     } else {
       await supabase.from('exenciones').delete().eq('evento_id', ev.id).eq('tipo', tipo)
-      setExen((s) => { const n = new Set(s); jugadores.forEach((j) => n.delete(`${j.id}:${tipo}`)); return n })
+      setExen((s) => { const n = new Set(s); objetivo.forEach((j) => n.delete(`${j.id}:${tipo}`)); return n })
     }
   }
 
@@ -154,8 +156,10 @@ export default function Sesion() {
   // Un jugador lesionado NO está disponible para ser convocado.
   const disponibles = jugadores.filter((j) => !lesionados.has(j.id))
   const convocados = disponibles.filter((j) => !desc.has(j.id)).length
-  const wellnessExcusados = jugadores.filter((j) => exen.has(`${j.id}:wellness`)).length
-  const rpeExcusados = jugadores.filter((j) => exen.has(`${j.id}:rpe`)).length
+  // A quién SE LE PIDE encuesta: convocados y no lesionados (a los demás no).
+  const pedibles = disponibles.filter((j) => !desc.has(j.id))
+  const wellnessExcusados = pedibles.filter((j) => exen.has(`${j.id}:wellness`)).length
+  const rpeExcusados = pedibles.filter((j) => exen.has(`${j.id}:rpe`)).length
 
   return (
     <div>
@@ -245,21 +249,21 @@ export default function Sesion() {
         <div className="mb-1 flex items-center justify-between border-b border-damm-line2 pb-2">
           <h2 className="eyebrow text-damm-muted">Encuestas pendientes</h2>
           <span className="text-xs tabular-nums text-damm-faint">
-            {jugadores.length - wellnessExcusados}·W {jugadores.length - rpeExcusados}·R exigidas
+            {pedibles.length - wellnessExcusados}·W {pedibles.length - rpeExcusados}·R exigidas
           </span>
         </div>
         <p className="mb-3 mt-2 text-xs text-damm-faint">
-          Excusa una encuesta y ese jugador dejará de tenerla como pendiente para esta sesión. No afecta a puntos ni asistencia.
+          Solo jugadores convocados y sanos. Excusa una encuesta y ese jugador dejará de tenerla como pendiente para esta sesión. No afecta a puntos ni asistencia.
         </p>
 
         {/* Acciones rápidas para toda la plantilla */}
         <div className="mb-4 grid grid-cols-2 gap-2">
-          <BulkBtn label="Wellness" excusados={wellnessExcusados} total={jugadores.length} onExcusar={() => excusarTodos('wellness', true)} onExigir={() => excusarTodos('wellness', false)} />
-          <BulkBtn label="RPE" excusados={rpeExcusados} total={jugadores.length} onExcusar={() => excusarTodos('rpe', true)} onExigir={() => excusarTodos('rpe', false)} />
+          <BulkBtn label="Wellness" excusados={wellnessExcusados} total={pedibles.length} onExcusar={() => excusarTodos('wellness', true)} onExigir={() => excusarTodos('wellness', false)} />
+          <BulkBtn label="RPE" excusados={rpeExcusados} total={pedibles.length} onExcusar={() => excusarTodos('rpe', true)} onExigir={() => excusarTodos('rpe', false)} />
         </div>
 
         <div className="divide-y divide-damm-line">
-          {jugadores.map((j) => (
+          {pedibles.map((j) => (
             <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
               <span className="min-w-0 flex-1 truncate text-sm text-damm-ink">{j.nombre}</span>
               <div className="flex gap-1.5">

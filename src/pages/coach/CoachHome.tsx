@@ -54,7 +54,16 @@ export default function CoachHome() {
     setPuntosSemana((psRes.data as PuntoSemana[]) ?? [])
     setCargando(false)
   }
-  useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    cargar()
+    function onFocus() { if (document.visibilityState === 'visible') cargar() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [])
 
   if (cargando) return <Spinner label="Cargando panel…" />
 
