@@ -97,29 +97,35 @@ function PerfilEntrenador({ id }: { id: string }) {
   const [asis, setAsis] = useState<AsisRow[]>([])
   const [desc, setDesc] = useState<Set<string>>(new Set())
   const [mins, setMins] = useState<MinRow[]>([])
-  const [nWellness, setNWellness] = useState(0)
-  const [nRpe, setNRpe] = useState(0)
+  const [wSet, setWSet] = useState<Set<string>>(new Set())   // evento_id con wellness respondido
+  const [rSet, setRSet] = useState<Set<string>>(new Set())   // evento_id con rpe respondido
+  const [exen, setExen] = useState<Set<string>>(new Set())   // `${evento}:${tipo}` exento
+  const [lesiones, setLesiones] = useState<{ fecha_inicio: string; fecha_fin: string }[]>([])
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     async function cargar() {
       const hoy = hoyISO()
-      const [pRes, eRes, aRes, dRes, mRes, wRes, rRes] = await Promise.all([
+      const [pRes, eRes, aRes, dRes, mRes, wRes, rRes, xRes, lRes] = await Promise.all([
         supabase.from('perfiles').select('posicion').eq('id', id).maybeSingle(),
         supabase.from('eventos').select('id,tipo,fecha,hora,titulo,rival').lte('fecha', hoy).order('fecha', { ascending: false }).limit(400),
         supabase.from('asistencia').select('evento_id,estado').eq('profile_id', id),
         supabase.from('desconvocados').select('evento_id').eq('profile_id', id),
         supabase.from('minutos_jugados').select('evento_id,minutos').eq('profile_id', id),
-        supabase.from('wellness').select('id').eq('profile_id', id),
-        supabase.from('rpe').select('id').eq('profile_id', id),
+        supabase.from('wellness').select('evento_id').eq('profile_id', id),
+        supabase.from('rpe').select('evento_id').eq('profile_id', id),
+        supabase.from('exenciones').select('evento_id,tipo').eq('profile_id', id),
+        supabase.from('lesiones').select('fecha_inicio,fecha_fin').eq('profile_id', id),
       ])
       setPosicion((pRes.data as any)?.posicion ?? null)
       setEventos((eRes.data as Evento[]) ?? [])
       setAsis((aRes.data as AsisRow[]) ?? [])
       setDesc(new Set(((dRes.data as any[]) ?? []).map((x) => x.evento_id)))
       setMins((mRes.data as MinRow[]) ?? [])
-      setNWellness((wRes.data as any[])?.length ?? 0)
-      setNRpe((rRes.data as any[])?.length ?? 0)
+      setWSet(new Set(((wRes.data as any[]) ?? []).map((x) => x.evento_id)))
+      setRSet(new Set(((rRes.data as any[]) ?? []).map((x) => x.evento_id)))
+      setExen(new Set(((xRes.data as any[]) ?? []).map((x) => `${x.evento_id}:${x.tipo}`)))
+      setLesiones((lRes.data as any[]) ?? [])
       setCargando(false)
     }
     cargar()
@@ -144,6 +150,17 @@ function PerfilEntrenador({ id }: { id: string }) {
   const minutosTotales = mins.reduce((a, m) => a + m.minutos, 0)
   const partidosJugados = partidos.filter((p) => (minMap.get(p.id) ?? 0) > 0).length
   const convocados = partidos.filter((p) => !desc.has(p.id)).length
+
+  // Encuestas: respondidas y SIN CONTESTAR (se le pedía y no la rellenó).
+  const lesionEn = (fecha: string) => lesiones.some((l) => l.fecha_inicio <= fecha && fecha <= l.fecha_fin)
+  const asisExcl = (eid: string) => { const e = asisMap.get(eid); return e === 'lesionado' || e === 'no_vino' }
+  let wNo = 0, rNo = 0
+  for (const e of eventos) {
+    const base = !desc.has(e.id) && !lesionEn(e.fecha) && !asisExcl(e.id)
+    if (base && !exen.has(`${e.id}:wellness`) && !wSet.has(e.id)) wNo++
+    if (base && !exen.has(`${e.id}:rpe`) && !rSet.has(e.id)) rNo++
+  }
+  const nWellness = wSet.size, nRpe = rSet.size
 
   return (
     <div className="space-y-8">
@@ -202,16 +219,34 @@ function PerfilEntrenador({ id }: { id: string }) {
         </div>
       </Section>
 
-      {/* Encuestas registradas */}
-      <Section title="Encuestas registradas">
-        <div className="grid grid-cols-2 divide-x divide-damm-line rounded-xl border border-damm-line">
-          <div className="px-3 py-3.5 text-center">
-            <p className="eyebrow text-damm-faint">Wellness</p>
-            <p className="mt-1.5 font-display text-xl font-bold tabular-nums text-damm-ink">{nWellness}</p>
+      {/* Encuestas: respondidas y sin contestar */}
+      <Section title="Encuestas">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-damm-line">
+            <p className="border-b border-damm-line px-3 py-2 text-center eyebrow text-damm-muted">Wellness</p>
+            <div className="grid grid-cols-2 divide-x divide-damm-line">
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] text-damm-faint">Respondidas</p>
+                <p className="mt-1 font-display text-xl font-bold tabular-nums text-damm-good">{nWellness}</p>
+              </div>
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] text-damm-faint">Sin contestar</p>
+                <p className={'mt-1 font-display text-xl font-bold tabular-nums ' + (wNo > 0 ? 'text-damm-red' : 'text-damm-ink')}>{wNo}</p>
+              </div>
+            </div>
           </div>
-          <div className="px-3 py-3.5 text-center">
-            <p className="eyebrow text-damm-faint">RPE</p>
-            <p className="mt-1.5 font-display text-xl font-bold tabular-nums text-damm-ink">{nRpe}</p>
+          <div className="rounded-xl border border-damm-line">
+            <p className="border-b border-damm-line px-3 py-2 text-center eyebrow text-damm-muted">RPE</p>
+            <div className="grid grid-cols-2 divide-x divide-damm-line">
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] text-damm-faint">Respondidas</p>
+                <p className="mt-1 font-display text-xl font-bold tabular-nums text-damm-good">{nRpe}</p>
+              </div>
+              <div className="px-2 py-3 text-center">
+                <p className="text-[11px] text-damm-faint">Sin contestar</p>
+                <p className={'mt-1 font-display text-xl font-bold tabular-nums ' + (rNo > 0 ? 'text-damm-red' : 'text-damm-ink')}>{rNo}</p>
+              </div>
+            </div>
           </div>
         </div>
       </Section>
