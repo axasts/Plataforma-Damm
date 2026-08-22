@@ -64,9 +64,9 @@ export interface MetricaInfo {
 
 export const METRICAS_WELLNESS: MetricaInfo[] = [
   { key: 'sueno', label: 'Calidad del sueño', min: 'poco', max: 'muy bien' },
-  { key: 'fatiga', label: 'Fatiga', min: 'muy cansado', max: 'nada cansado' },
-  { key: 'dolor_muscular', label: 'Dolor muscular (agujetas)', min: 'dolorido', max: 'sin molestias' },
-  { key: 'estres', label: 'Estrés', min: 'estresado', max: 'tranquilo' },
+  { key: 'fatiga', label: 'Fatiga', min: 'nada cansado', max: 'muy cansado' },
+  { key: 'dolor_muscular', label: 'Dolor muscular (agujetas)', min: 'sin molestias', max: 'muchas molestias' },
+  { key: 'estres', label: 'Estrés', min: 'tranquilo', max: 'muy estresado' },
   { key: 'animo', label: 'Estado de ánimo', min: 'bajo ánimo', max: 'buen humor' },
 ]
 
