@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Evento } from '../../lib/types'
 import { Spinner, PageHeader } from '../../components/ui'
@@ -186,13 +187,13 @@ export default function Datos() {
 
 function Distribucion({ metrica, filas, jug }: { metrica: string; filas: Fila[]; jug: Record<string, string> }) {
   const color = COLORES[metrica] ?? '#c9a54e'
-  // Agrupa nombres por valor.
-  const porValor = new Map<number, string[]>()
+  // Agrupa jugadores por valor.
+  const porValor = new Map<number, { id: string; nombre: string }[]>()
   for (const f of filas) {
     const v = f[metrica]
     if (v == null) continue
     if (!porValor.has(v)) porValor.set(v, [])
-    porValor.get(v)!.push(jug[f.profile_id] ?? '—')
+    porValor.get(v)!.push({ id: f.profile_id, nombre: jug[f.profile_id] ?? '—' })
   }
   const maxCount = Math.max(1, ...[...porValor.values()].map((a) => a.length))
   const valores = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
@@ -220,8 +221,8 @@ function Distribucion({ metrica, filas, jug }: { metrica: string; filas: Fila[];
                     <span className="shrink-0 text-xs font-semibold tabular-nums text-damm-muted">{nombres.length}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {nombres.map((n, i) => (
-                      <span key={i} className="rounded border border-damm-line bg-white/[0.03] px-1.5 py-0.5 text-[11px] text-damm-muted">{n}</span>
+                    {nombres.map((n) => (
+                      <Link key={n.id} to={`/jugador/${n.id}`} className="rounded border border-damm-line bg-white/[0.03] px-1.5 py-0.5 text-[11px] text-damm-muted transition hover:border-damm-red/40 hover:text-damm-red">{n.nombre}</Link>
                     ))}
                   </div>
                 </div>

@@ -10,7 +10,7 @@ import { ETIQUETAS_METRICA, formatFecha } from '../../lib/utils'
 interface Jug { id: string; nombre: string; posicion: string | null }
 interface Resp { profile_id: string; fecha: string; [k: string]: any }
 interface Resumen { profile_id: string; nombre: string; wellness_pend: number; rpe_pend: number }
-interface Alerta { nombre: string; metrica: string; valor: number; fecha: string }
+interface Alerta { profile_id: string; nombre: string; metrica: string; valor: number; fecha: string }
 interface Lesion { profile_id: string; fecha_inicio: string; fecha_fin: string }
 interface PuntoSemana { profile_id: string; puntos: number; motivo: string | null; fecha: string }
 
@@ -76,7 +76,7 @@ export default function CoachHome() {
       const v = r[rg.metrica]
       if (v === undefined || v === null) continue
       const disp = rg.operador === '>=' ? v >= rg.valor : v <= rg.valor
-      if (disp) alertas.push({ nombre: jug[r.profile_id]?.nombre ?? '—', metrica: rg.metrica, valor: v, fecha: r.fecha })
+      if (disp) alertas.push({ profile_id: r.profile_id, nombre: jug[r.profile_id]?.nombre ?? '—', metrica: rg.metrica, valor: v, fecha: r.fecha })
     }
   }
 
@@ -135,7 +135,7 @@ export default function CoachHome() {
             {alertas.map((a, i) => (
               <div key={i} className="flex items-center gap-3 border-b border-damm-line py-3">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-damm-red" />
-                <span className="flex-1 text-sm font-medium text-damm-ink">{a.nombre}</span>
+                <Link to={`/jugador/${a.profile_id}`} className="flex-1 text-sm font-medium text-damm-ink transition hover:text-damm-red">{a.nombre}</Link>
                 <span className="text-sm text-damm-muted">{ETIQUETAS_METRICA[a.metrica] ?? a.metrica}</span>
                 <span className="font-display text-lg font-bold tabular-nums text-damm-red">{a.valor}</span>
                 <span className="w-16 text-right text-xs capitalize text-damm-faint">{formatFecha(a.fecha)}</span>
@@ -250,7 +250,7 @@ function MediaSemanal({ jugadores, lesiones, puntosSemana, coachId, onAplicado }
           <div className="mb-4">
             {lesionados.map((j) => (
               <div key={j.id} className="flex items-center justify-between border-b border-damm-line py-2.5">
-                <span className="text-sm font-medium text-damm-ink">{j.nombre}</span>
+                <Link to={`/jugador/${j.id}`} className="text-sm font-medium text-damm-ink transition hover:text-damm-red">{j.nombre}</Link>
                 {yaAplicada(j.id)
                   ? <span className="text-xs font-semibold text-damm-good">Aplicada ✓</span>
                   : <span className="text-xs text-damm-faint">Pendiente</span>}
@@ -284,7 +284,7 @@ function BuscadorValores({ jug, wellness, rpe }: { jug: Record<string, Jug>; wel
     if (!prev || (op === '>=' ? v > prev.valor : v < prev.valor)) porJug.set(r.profile_id, { valor: v, fecha: r.fecha })
   }
   const matches = [...porJug.entries()]
-    .map(([pid, x]) => ({ nombre: jug[pid]?.nombre ?? '—', pos: jug[pid]?.posicion ?? null, ...x }))
+    .map(([pid, x]) => ({ id: pid, nombre: jug[pid]?.nombre ?? '—', pos: jug[pid]?.posicion ?? null, ...x }))
     .sort((a, b) => (op === '>=' ? b.valor - a.valor : a.valor - b.valor))
 
   return (
@@ -323,9 +323,9 @@ function BuscadorValores({ jug, wellness, rpe }: { jug: Record<string, Jug>; wel
           <p className="mb-1 text-xs tabular-nums text-damm-faint">{matches.length} jugador{matches.length !== 1 ? 'es' : ''}</p>
           {matches.map((mt, i) => (
             <div key={i} className="flex items-center gap-3 border-b border-damm-line py-2.5">
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-damm-ink">
+              <Link to={`/jugador/${mt.id}`} className="min-w-0 flex-1 truncate text-sm font-medium text-damm-ink transition hover:text-damm-red">
                 {mt.nombre}{mt.pos && <span className="text-damm-faint"> · {mt.pos}</span>}
-              </span>
+              </Link>
               <span className="text-xs capitalize text-damm-faint">{formatFecha(mt.fecha)}</span>
               <span className={'font-display text-base font-bold tabular-nums ' + (op === '>=' ? 'text-damm-red' : 'text-damm-gold')}>{mt.valor}</span>
             </div>
