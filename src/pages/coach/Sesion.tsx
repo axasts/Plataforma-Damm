@@ -25,6 +25,7 @@ export default function Sesion() {
   const [lesionados, setLesionados] = useState<Set<string>>(new Set()) // lesión activa en la fecha
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState<null | 'ejercicio' | 'sancion'>(null)
+  const [editando, setEditando] = useState(false)
 
   async function cargarPuntos(id: string) {
     const { data } = await supabase
@@ -163,6 +164,7 @@ export default function Sesion() {
         eyebrow={esPartido ? 'Partido' : 'Entrenamiento'}
         title={nombreEvento(evento)}
         subtitle={`${formatFechaLarga(evento.fecha)}${evento.hora ? ` · ${evento.hora.slice(0, 5)}` : ''}`}
+        action={<button className="btn-ghost px-3 py-2 text-xs" onClick={() => setEditando(true)}>Editar</button>}
       />
 
       {/* Disponibilidad / Convocatoria */}
@@ -303,7 +305,63 @@ export default function Sesion() {
       {modal === 'sancion' && (
         <SancionModal jugadores={jugadores} motivos={motivos} defecto={esPartido ? 'partido' : 'entrenamiento'} onClose={() => setModal(null)} onApply={(pids, m) => aplicar(pids, m.puntos, m.nombre, m.id)} />
       )}
+      {editando && (
+        <EditarEventoModal evento={ev} onClose={() => setEditando(false)} onSaved={(e) => { setEvento(e); setEditando(false) }} />
+      )}
     </div>
+  )
+}
+
+function EditarEventoModal({ evento, onClose, onSaved }: {
+  evento: Evento; onClose: () => void; onSaved: (e: Evento) => void
+}) {
+  const esPartido = evento.tipo === 'partido'
+  const [fecha, setFecha] = useState(evento.fecha)
+  const [hora, setHora] = useState(evento.hora ? evento.hora.slice(0, 5) : '')
+  const [rival, setRival] = useState(evento.rival ?? '')
+  const [titulo, setTitulo] = useState(evento.titulo ?? '')
+  const [guardando, setGuardando] = useState(false)
+
+  async function guardar() {
+    setGuardando(true)
+    const cambios = {
+      fecha,
+      hora: esPartido ? (hora || null) : evento.hora,
+      rival: esPartido ? (rival.trim() || null) : evento.rival,
+      titulo: titulo.trim() || null,
+    }
+    const { error } = await supabase.from('eventos').update(cambios).eq('id', evento.id)
+    setGuardando(false)
+    if (error) { window.alert(error.message); return }
+    onSaved({ ...evento, ...cambios })
+  }
+
+  return (
+    <Modal open onClose={onClose} title={esPartido ? 'Editar partido' : 'Editar entrenamiento'}>
+      <div className="space-y-3">
+        {esPartido && (
+          <div>
+            <label className="label">Rival</label>
+            <input className="input" value={rival} onChange={(e) => setRival(e.target.value)} placeholder="Ej: Sant Just" />
+          </div>
+        )}
+        <div>
+          <label className="label">Título {esPartido ? '(opcional)' : ''}</label>
+          <input className="input" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder={esPartido ? 'Partido' : 'Entrenamiento'} />
+        </div>
+        <div>
+          <label className="label">Fecha</label>
+          <input className="input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        </div>
+        {esPartido && (
+          <div>
+            <label className="label">Hora (convocatoria / partido)</label>
+            <input className="input" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
+          </div>
+        )}
+        <button className="btn-primary w-full" disabled={guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar cambios'}</button>
+      </div>
+    </Modal>
   )
 }
 
