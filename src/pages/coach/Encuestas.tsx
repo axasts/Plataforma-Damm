@@ -9,7 +9,19 @@ interface Jug { id: string; nombre: string }
 interface Resp { profile_id: string; evento_id: string; a_tiempo: boolean }
 interface Lesion { profile_id: string; fecha_inicio: string; fecha_fin: string }
 
-const DIAS = 7
+// Lunes de la semana de una fecha.
+function lunesDe(d: Date): Date {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7))
+  return x
+}
+function isoDe(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function sumarDias(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return isoDe(d)
+}
 
 // Estado de un jugador respecto a una encuesta de un evento.
 type Estado = 'ok' | 'tarde_resp' | 'fuera_plazo' | 'pendiente'
@@ -24,12 +36,18 @@ export default function Encuestas() {
   const [asis, setAsis] = useState<Set<string>>(new Set())     // `${evento}:${pid}` lesionado/no_vino
   const [lesiones, setLesiones] = useState<Lesion[]>([])
   const [cargando, setCargando] = useState(true)
+  // Lunes de la semana de referencia (por defecto, esta semana).
+  const [refLunes, setRefLunes] = useState<string>(() => isoDe(lunesDe(new Date())))
+
+  // Ventana visible: semana anterior + semana de referencia (14 días).
+  const desde = sumarDias(refLunes, -7)
+  const finVentana = sumarDias(refLunes, 6)          // domingo de la semana de referencia
+  const hoy = hoyISO()
+  const hasta = finVentana > hoy ? hoy : finVentana  // no mostramos días futuros (sin respuestas)
 
   async function cargar() {
-    const hoy = hoyISO()
-    const desde = new Date(Date.now() - DIAS * 86400000).toISOString().slice(0, 10)
     const { data: evs } = await supabase
-      .from('eventos').select('*').gte('fecha', desde).lte('fecha', hoy).order('fecha', { ascending: false })
+      .from('eventos').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false })
     const listaEv = (evs as Evento[]) ?? []
     const ids = listaEv.map((e) => e.id)
 
@@ -39,7 +57,7 @@ export default function Encuestas() {
       supabase.from('rpe').select('profile_id,evento_id,a_tiempo').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
       supabase.from('desconvocados').select('evento_id,profile_id').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
       supabase.from('exenciones').select('evento_id,profile_id,tipo').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
-      supabase.from('lesiones').select('profile_id,fecha_inicio,fecha_fin').lte('fecha_inicio', hoy).gte('fecha_fin', desde),
+      supabase.from('lesiones').select('profile_id,fecha_inicio,fecha_fin').lte('fecha_inicio', hasta).gte('fecha_fin', desde),
       supabase.from('asistencia').select('evento_id,profile_id,estado').in('evento_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
     ])
 
@@ -62,7 +80,10 @@ export default function Encuestas() {
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onFocus)
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refLunes])
+
+  const estaSemana = refLunes >= isoDe(lunesDe(new Date()))
 
   if (cargando) return <Spinner label="Cargando encuestas…" />
 
@@ -99,16 +120,31 @@ export default function Encuestas() {
 
   return (
     <div>
-      <PageHeader eyebrow="Control" title="Encuestas" subtitle={`Últimos ${DIAS} días · quién ha respondido y quién no`} />
+      <PageHeader eyebrow="Control" title="Encuestas" subtitle="Quién ha respondido y quién no, por semanas." />
+
+      {/* Navegación por semanas */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <button onClick={() => setRefLunes(sumarDias(refLunes, -7))} className="rounded-lg border border-damm-line px-3 py-1.5 text-damm-muted transition hover:bg-white/5 hover:text-damm-ink" aria-label="Semana anterior">‹</button>
+        <span className="flex-1 text-center text-sm font-semibold capitalize text-damm-ink">{formatFecha(desde)} – {formatFecha(hasta)}</span>
+        <button onClick={() => setRefLunes(sumarDias(refLunes, 7))} disabled={estaSemana} className="rounded-lg border border-damm-line px-3 py-1.5 text-damm-muted transition hover:bg-white/5 hover:text-damm-ink disabled:opacity-30" aria-label="Semana siguiente">›</button>
+        {!estaSemana && <button onClick={() => setRefLunes(isoDe(lunesDe(new Date())))} className="rounded-lg border border-damm-line px-3 py-1.5 text-xs font-semibold text-damm-muted transition hover:text-damm-ink">Hoy</button>}
+        <input
+          type="date"
+          value={refLunes}
+          onChange={(e) => { if (e.target.value) setRefLunes(isoDe(lunesDe(new Date(e.target.value + 'T00:00:00')))) }}
+          className="input w-auto px-2 py-1.5 text-xs"
+          title="Ir a la semana de una fecha"
+        />
+      </div>
 
       <div className="mb-8 border-y border-damm-line px-1 py-4">
         <p className="eyebrow text-damm-faint">Sin responder fuera de plazo</p>
         <p className={'mt-1.5 font-display text-3xl font-bold tabular-nums ' + (totalFuera > 0 ? 'text-damm-red' : 'text-damm-good')}>{totalFuera}</p>
-        <p className="mt-0.5 text-xs text-damm-faint">encuestas cuyo plazo ya ha pasado y no se respondieron</p>
+        <p className="mt-0.5 text-xs text-damm-faint">en este periodo, plazo pasado y sin responder</p>
       </div>
 
       {eventos.length === 0 ? (
-        <p className="py-2 text-sm text-damm-muted">No hay eventos en los últimos {DIAS} días.</p>
+        <p className="py-2 text-sm text-damm-muted">No hay eventos en este periodo.</p>
       ) : (
         <div className="space-y-8">
           {eventos.map((ev) => (
