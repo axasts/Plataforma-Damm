@@ -337,14 +337,19 @@ export default function Sesion() {
         <SancionModal jugadores={jugadores} motivos={motivos} defecto={esPartido ? 'partido' : 'entrenamiento'} onClose={() => setModal(null)} onApply={(pids, m) => aplicar(pids, m.puntos, m.nombre, m.id)} />
       )}
       {editando && (
-        <EditarEventoModal evento={ev} onClose={() => setEditando(false)} onSaved={(e) => { setEvento(e); setEditando(false) }} />
+        <EditarEventoModal
+          evento={ev}
+          onClose={() => setEditando(false)}
+          onSaved={(e) => { setEvento(e); setEditando(false) }}
+          onDeleted={() => nav('/calendario')}
+        />
       )}
     </div>
   )
 }
 
-function EditarEventoModal({ evento, onClose, onSaved }: {
-  evento: Evento; onClose: () => void; onSaved: (e: Evento) => void
+function EditarEventoModal({ evento, onClose, onSaved, onDeleted }: {
+  evento: Evento; onClose: () => void; onSaved: (e: Evento) => void; onDeleted: () => void
 }) {
   const esPartido = evento.tipo === 'partido'
   const [fecha, setFecha] = useState(evento.fecha)
@@ -352,6 +357,7 @@ function EditarEventoModal({ evento, onClose, onSaved }: {
   const [rival, setRival] = useState(evento.rival ?? '')
   const [titulo, setTitulo] = useState(evento.titulo ?? '')
   const [guardando, setGuardando] = useState(false)
+  const [borrando, setBorrando] = useState(false)
 
   async function guardar() {
     setGuardando(true)
@@ -365,6 +371,15 @@ function EditarEventoModal({ evento, onClose, onSaved }: {
     setGuardando(false)
     if (error) { window.alert(error.message); return }
     onSaved({ ...evento, ...cambios })
+  }
+
+  async function eliminar() {
+    if (!window.confirm(`¿Eliminar este ${esPartido ? 'partido' : 'entrenamiento'}? Se borrarán también sus wellness, RPE, asistencia y minutos. No se puede deshacer.`)) return
+    setBorrando(true)
+    const { error } = await supabase.from('eventos').delete().eq('id', evento.id)
+    setBorrando(false)
+    if (error) { window.alert(error.message); return }
+    onDeleted()
   }
 
   return (
@@ -391,6 +406,7 @@ function EditarEventoModal({ evento, onClose, onSaved }: {
           </div>
         )}
         <button className="btn-primary w-full" disabled={guardando} onClick={guardar}>{guardando ? 'Guardando…' : 'Guardar cambios'}</button>
+        <button className="btn-danger w-full" disabled={borrando} onClick={eliminar}>{borrando ? 'Eliminando…' : `Eliminar ${esPartido ? 'partido' : 'entrenamiento'}`}</button>
       </div>
     </Modal>
   )
