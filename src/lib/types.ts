@@ -7,6 +7,7 @@ export interface Perfil {
   rol: Rol
   posicion: string | null
   email: string | null
+  demo: boolean
 }
 
 export interface Evento {

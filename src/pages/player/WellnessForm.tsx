@@ -30,6 +30,8 @@ export default function WellnessForm() {
 
   async function guardar() {
     if (!completo || !perfil || !evento) return
+    // Cuenta demo: solo previsualización, no se guarda nada.
+    if (perfil.demo) { nav('/'); return }
     setGuardando(true)
     setError('')
     const { error } = await supabase.from('wellness').insert({

@@ -36,6 +36,22 @@ Flujo del jugador: entrar por ese enlace → **Primer acceso** → código `DAMM
 → elegir su nombre → correo + contraseña → dentro. Después ya entra por la URL
 normal con **Entrar**.
 
+## Usuario demo (vista de jugador)
+
+Acceso de prueba para ver la app **como un jugador** sin ensuciar nada:
+
+    correo:       vista.demo@damm.local
+    contraseña:   DemoDamm2026
+
+- Se entra por el **login normal** ("Entrar"), no por el enlace de alta.
+- Es un perfil marcado como `demo` en la tabla `perfiles`, así que **es
+  invisible para los entrenadores**: no aparece en plantilla, pendientes,
+  clasificación ni estadísticas.
+- Puede abrir los formularios de wellness/RPE para verlos, pero **no guarda
+  nada** (solo previsualización).
+- Se crea/recrea ejecutando el bloque SQL del usuario demo en Supabase → SQL
+  Editor (es repetible).
+
 ## Requisitos para que funcionen los logins
 
 - **Email activado** en Supabase (Authentication → Providers → Email) y

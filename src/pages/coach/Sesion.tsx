@@ -21,6 +21,7 @@ export default function Sesion() {
   const [estados, setEstados] = useState<Record<string, Estado>>({}) // entreno: asistencia
   const [desc, setDesc] = useState<Set<string>>(new Set())           // partido: no convocados
   const [exen, setExen] = useState<Set<string>>(new Set())           // encuestas excusadas: `${pid}:${tipo}`
+  const [minutos, setMinutos] = useState<Record<string, string>>({}) // partido: minutos jugados por jugador
   const [lesionados, setLesionados] = useState<Set<string>>(new Set()) // lesión activa en la fecha
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState<null | 'ejercicio' | 'sancion'>(null)
@@ -37,7 +38,7 @@ export default function Sesion() {
     async function init() {
       const [ev, j, m] = await Promise.all([
         supabase.from('eventos').select('*').eq('id', eventoId).maybeSingle(),
-        supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').order('nombre'),
+        supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').eq('demo', false).order('nombre'),
         supabase.from('motivos_puntos').select('*').eq('activo', true).order('categoria').order('nombre'),
       ])
       const e = ev.data as Evento
@@ -47,6 +48,10 @@ export default function Sesion() {
       if (e?.tipo === 'partido') {
         const { data } = await supabase.from('desconvocados').select('profile_id').eq('evento_id', eventoId)
         setDesc(new Set(((data as any[]) ?? []).map((x) => x.profile_id)))
+        const { data: mins } = await supabase.from('minutos_jugados').select('profile_id,minutos').eq('evento_id', eventoId)
+        const mp: Record<string, string> = {}
+        ;((mins as any[]) ?? []).forEach((r) => (mp[r.profile_id] = String(r.minutos)))
+        setMinutos(mp)
       } else {
         const { data } = await supabase.from('asistencia').select('profile_id,estado').eq('evento_id', eventoId)
         const mp: Record<string, Estado> = {}
@@ -86,6 +91,22 @@ export default function Sesion() {
       await supabase.from('desconvocados').insert({ evento_id: ev.id, profile_id: pid })
       setDesc((s) => new Set(s).add(pid))
     }
+  }
+
+  // Guarda los minutos jugados de un jugador (vacío = borra la fila).
+  async function guardarMinutos(pid: string, valor: string) {
+    const limpio = valor.trim()
+    setMinutos((m) => ({ ...m, [pid]: limpio }))
+    if (limpio === '') {
+      await supabase.from('minutos_jugados').delete().eq('evento_id', ev.id).eq('profile_id', pid)
+      return
+    }
+    const n = Math.max(0, Math.min(200, parseInt(limpio, 10) || 0))
+    setMinutos((m) => ({ ...m, [pid]: String(n) }))
+    await supabase.from('minutos_jugados').upsert(
+      { evento_id: ev.id, profile_id: pid, minutos: n },
+      { onConflict: 'evento_id,profile_id' },
+    )
   }
 
   async function toggleExencion(pid: string, tipo: 'wellness' | 'rpe') {
@@ -129,7 +150,9 @@ export default function Sesion() {
     setPuntos((p) => p.filter((x) => x.id !== id))
   }
 
-  const convocados = jugadores.length - desc.size
+  // Un jugador lesionado NO está disponible para ser convocado.
+  const disponibles = jugadores.filter((j) => !lesionados.has(j.id))
+  const convocados = disponibles.filter((j) => !desc.has(j.id)).length
   const wellnessExcusados = jugadores.filter((j) => exen.has(`${j.id}:wellness`)).length
   const rpeExcusados = jugadores.filter((j) => exen.has(`${j.id}:rpe`)).length
 
@@ -154,15 +177,19 @@ export default function Sesion() {
           {jugadores.map((j) => esPartido ? (
             <div key={j.id} className="flex items-center justify-between py-2.5">
               <span className="flex items-center gap-2">
-                <span className={'text-sm ' + (desc.has(j.id) ? 'text-damm-faint line-through' : 'text-damm-ink')}>{j.nombre}</span>
+                <span className={'text-sm ' + (lesionados.has(j.id) || desc.has(j.id) ? 'text-damm-faint line-through' : 'text-damm-ink')}>{j.nombre}</span>
                 {lesionados.has(j.id) && <span className="chip bg-damm-gold/15 text-damm-gold">Lesión</span>}
               </span>
-              <button
-                onClick={() => toggleConvocatoria(j.id)}
-                className={'rounded-md px-3 py-1 text-xs font-semibold transition ' + (desc.has(j.id) ? 'text-damm-faint hover:text-damm-ink' : 'bg-damm-good/15 text-damm-good')}
-              >
-                {desc.has(j.id) ? 'No convocado' : 'Convocado'}
-              </button>
+              {lesionados.has(j.id) ? (
+                <span className="rounded-md px-3 py-1 text-xs font-semibold text-damm-faint">No disponible</span>
+              ) : (
+                <button
+                  onClick={() => toggleConvocatoria(j.id)}
+                  className={'rounded-md px-3 py-1 text-xs font-semibold transition ' + (desc.has(j.id) ? 'text-damm-faint hover:text-damm-ink' : 'bg-damm-good/15 text-damm-good')}
+                >
+                  {desc.has(j.id) ? 'No convocado' : 'Convocado'}
+                </button>
+              )}
             </div>
           ) : (
             <div key={j.id} className="flex items-center justify-between py-2.5">
@@ -179,6 +206,37 @@ export default function Sesion() {
           ))}
         </div>
       </section>
+
+      {/* Minutos jugados (solo partido) */}
+      {esPartido && (
+        <section className="mb-9">
+          <div className="mb-1 flex items-center justify-between border-b border-damm-line2 pb-2">
+            <h2 className="eyebrow text-damm-muted">Minutos jugados</h2>
+            <span className="text-xs tabular-nums text-damm-faint">{convocados} convocados</span>
+          </div>
+          <p className="mb-3 mt-2 text-xs text-damm-faint">
+            Solo jugadores convocados. Sirve para cruzar la carga (minutos) con el RPE y el wellness.
+          </p>
+          <div className="divide-y divide-damm-line">
+            {disponibles.filter((j) => !desc.has(j.id)).map((j) => (
+              <div key={j.id} className="flex items-center justify-between gap-3 py-2.5">
+                <span className="min-w-0 flex-1 truncate text-sm text-damm-ink">{j.nombre}</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number" min={0} max={200} inputMode="numeric"
+                    value={minutos[j.id] ?? ''}
+                    onChange={(e) => setMinutos((m) => ({ ...m, [j.id]: e.target.value }))}
+                    onBlur={(e) => guardarMinutos(j.id, e.target.value)}
+                    placeholder="—"
+                    className="input w-20 text-center font-display text-base font-bold tabular-nums"
+                  />
+                  <span className="w-8 text-xs text-damm-faint">min</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Encuestas: excusar wellness / RPE (deja de salir como pendiente) */}
       <section className="mb-9">

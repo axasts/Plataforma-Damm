@@ -13,6 +13,7 @@
 -- ---------- NETEJA (per poder re-executar en desenvolupament) ----------------
 drop table if exists asistencia      cascade;
 drop table if exists exenciones      cascade;
+drop table if exists minutos_jugados cascade;
 drop table if exists lesiones        cascade;
 drop table if exists rpe             cascade;
 drop table if exists wellness        cascade;
@@ -45,6 +46,7 @@ create table perfiles (
   rol         text not null check (rol in ('jugador','entrenador')),
   posicion    text,            -- només visible per entrenadors
   email       text,
+  demo        boolean not null default false,  -- perfil de prova: ocult per als entrenadors i sense dades reals
   created_at  timestamptz default now()
 );
 
@@ -150,6 +152,15 @@ create table lesiones (
   created_at    timestamptz default now()
 );
 
+-- Minuts jugats per jugador en un partit (per correlacionar amb RPE/wellness).
+create table minutos_jugados (
+  evento_id   uuid references eventos(id)  on delete cascade,
+  profile_id  uuid references perfiles(id) on delete cascade,
+  minutos     int not null check (minutos between 0 and 200),
+  created_at  timestamptz default now(),
+  primary key (evento_id, profile_id)
+);
+
 -- Regles d'avís configurables (pics de RPE / wellness).
 create table reglas_alerta (
   id          uuid primary key default gen_random_uuid(),
@@ -237,7 +248,7 @@ language sql security definer set search_path = public stable as $$
     coalesce(sum(pt.puntos),0)::int
   from perfiles p
   left join puntos pt on pt.profile_id = p.id
-  where p.rol = 'jugador'
+  where p.rol = 'jugador' and not p.demo
   group by p.id, p.nombre
   order by 5 desc, p.nombre;
 $$;
@@ -246,7 +257,7 @@ $$;
 create or replace function get_jugadores_publicos()
 returns table (id uuid, nombre text)
 language sql security definer set search_path = public stable as $$
-  select id, nombre from perfiles where rol = 'jugador' order by nombre;
+  select id, nombre from perfiles where rol = 'jugador' and not demo order by nombre;
 $$;
 
 -- Desglossament de punts d'un jugador (públic).
@@ -267,12 +278,13 @@ begin
     raise exception 'No autorizado';
   end if;
   return query
-    -- Wellness pendents
+    -- Wellness pendents (exclou desconvocats, exempts i lesionats en aquella data)
     select e.id, 'wellness'::text, e.fecha, e.titulo, e.tipo
     from eventos e
     where e.fecha <= current_date
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
       and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'wellness')
+      and not exists (select 1 from lesiones l where l.profile_id = p_profile and e.fecha between l.fecha_inicio and l.fecha_fin)
       and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p_profile)
     union all
     -- RPE pendents (exclou desconvocats, exempts i lesionats en aquella data)
@@ -299,6 +311,7 @@ begin
         where e.fecha <= current_date
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
           and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'wellness')
+          and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
           and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p.id))::int,
       (select count(*) from eventos e
         where e.fecha <= current_date
@@ -307,7 +320,7 @@ begin
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
           and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p.id))::int
     from perfiles p
-    where p.rol = 'jugador'
+    where p.rol = 'jugador' and not p.demo
     order by p.nombre;
 end;
 $$;
@@ -345,6 +358,7 @@ alter table wellness       enable row level security;
 alter table rpe            enable row level security;
 alter table asistencia     enable row level security;
 alter table exenciones     enable row level security;
+alter table minutos_jugados enable row level security;
 alter table lesiones       enable row level security;
 alter table reglas_alerta  enable row level security;
 
@@ -369,6 +383,11 @@ create policy desconv_coach on desconvocados for all using (is_coach()) with che
 -- exenciones: lectura per a qualsevol usuari; escriptura només entrenadors.
 create policy exenciones_read on exenciones for select using (auth.uid() is not null);
 create policy exenciones_coach on exenciones for all using (is_coach()) with check (is_coach());
+
+-- minutos_jugados: pròpies o entrenador (llegir); escriptura només entrenadors.
+create policy minutos_select on minutos_jugados for select
+  using (profile_id = my_profile_id() or is_coach());
+create policy minutos_coach on minutos_jugados for all using (is_coach()) with check (is_coach());
 
 -- motivos_puntos
 create policy motivos_read on motivos_puntos for select using (auth.uid() is not null);

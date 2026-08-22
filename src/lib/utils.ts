@@ -64,9 +64,9 @@ export interface MetricaInfo {
 
 export const METRICAS_WELLNESS: MetricaInfo[] = [
   { key: 'sueno', label: 'Calidad del sueño', min: 'poco', max: 'muy bien' },
-  { key: 'fatiga', label: 'Fatiga', min: 'muy cansado', max: 'nada cansado' },
-  { key: 'dolor_muscular', label: 'Dolor muscular (agujetas)', min: 'dolorido', max: 'sin molestias' },
-  { key: 'estres', label: 'Estrés', min: 'estresado', max: 'tranquilo' },
+  { key: 'fatiga', label: 'Fatiga', min: 'nada cansado', max: 'muy cansado' },
+  { key: 'dolor_muscular', label: 'Dolor muscular (agujetas)', min: 'sin molestias', max: 'muchas molestias' },
+  { key: 'estres', label: 'Estrés', min: 'tranquilo', max: 'muy estresado' },
   { key: 'animo', label: 'Estado de ánimo', min: 'bajo ánimo', max: 'buen humor' },
 ]
 
@@ -88,4 +88,41 @@ export const ETIQUETAS_METRICA: Record<string, string> = {
 export function nombreEvento(e: { tipo: string; titulo: string | null; rival?: string | null }): string {
   if (e.tipo === 'partido') return e.rival ? `Partido vs ${e.rival}` : e.titulo || 'Partido'
   return e.titulo || 'Entrenamiento'
+}
+
+// ---- Posiciones -----------------------------------------------------------
+// Sugerencias para el campo posición (mantiene la nomenclatura consistente).
+// El orden de esta lista es el orden "por líneas" del equipo.
+export const POSICIONES: string[] = [
+  'Portero',
+  'Central derecho', 'Central izquierdo',
+  'Lateral derecho', 'Lateral izquierdo',
+  'Pivote',
+  'Interior derecho', 'Interior izquierdo',
+  'Punta',
+  'Extremo derecho', 'Extremo izquierdo',
+]
+
+// Clave de orden de una posición (texto libre) para ordenar la plantilla:
+// porteros → centrales → laterales → pivote → interiores → punta → extremos,
+// y dentro de cada línea siempre primero el derecho y luego el izquierdo.
+export function ordenPosicion(posicion: string | null): number {
+  const p = (posicion ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // quita acentos
+  if (!p.trim()) return 9999 // "Sin posición" al final
+
+  const lado = /(derech|dret)/.test(p) ? 0 : /(izquierd|esquerr)/.test(p) ? 1 : 0
+
+  let base: number
+  if (/(porter|portar|arquer)/.test(p)) base = 0
+  else if (/(central|centre)/.test(p)) base = 10
+  else if (/(lateral|carriler)/.test(p)) base = 20
+  else if (/pivot/.test(p)) base = 30
+  else if (/interior/.test(p)) base = 40
+  else if (/(punta|delanter|davanter|ariete|9)/.test(p)) base = 50
+  else if (/(extrem|banda|winger)/.test(p)) base = 60
+  else base = 900 // desconocida, antes de "sin posición"
+
+  return base + lado
 }
