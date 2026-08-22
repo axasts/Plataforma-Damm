@@ -12,9 +12,21 @@ export default function PlayerHome() {
 
   useEffect(() => {
     if (!perfil) return
-    supabase
-      .rpc('get_pendientes', { p_profile: perfil.id })
-      .then(({ data }) => setPend((data as Pendiente[]) ?? []))
+    function cargar() {
+      supabase
+        .rpc('get_pendientes', { p_profile: perfil!.id })
+        .then(({ data }) => setPend((data as Pendiente[]) ?? []))
+    }
+    cargar()
+    // Refresca al volver a la pestaña (p.ej. si el entrenador acaba de
+    // desconvocar o excusar) para no depender de recargar a mano.
+    function onFocus() { if (document.visibilityState === 'visible') cargar() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
   }, [perfil])
 
   if (!pend) return <Spinner label="Cargando…" />
