@@ -35,7 +35,7 @@ export default function CoachHome() {
 
   async function cargar() {
     const [jRes, wRes, rRes, reRes, pRes, lRes, psRes] = await Promise.all([
-      supabase.from('perfiles').select('id,nombre,posicion').eq('rol', 'jugador'),
+      supabase.from('perfiles').select('id,nombre,posicion').eq('rol', 'jugador').eq('demo', false),
       supabase.from('wellness').select('profile_id,sueno,fatiga,dolor_muscular,estres,animo,eventos(fecha)').order('created_at', { ascending: false }).limit(150),
       supabase.from('rpe').select('profile_id,rpe_muscular,rpe_respiratorio,eventos(fecha)').order('created_at', { ascending: false }).limit(150),
       supabase.from('reglas_alerta').select('*').eq('activa', true),

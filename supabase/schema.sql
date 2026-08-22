@@ -45,6 +45,7 @@ create table perfiles (
   rol         text not null check (rol in ('jugador','entrenador')),
   posicion    text,            -- només visible per entrenadors
   email       text,
+  demo        boolean not null default false,  -- perfil de prova: ocult per als entrenadors i sense dades reals
   created_at  timestamptz default now()
 );
 
@@ -237,7 +238,7 @@ language sql security definer set search_path = public stable as $$
     coalesce(sum(pt.puntos),0)::int
   from perfiles p
   left join puntos pt on pt.profile_id = p.id
-  where p.rol = 'jugador'
+  where p.rol = 'jugador' and not p.demo
   group by p.id, p.nombre
   order by 5 desc, p.nombre;
 $$;
@@ -246,7 +247,7 @@ $$;
 create or replace function get_jugadores_publicos()
 returns table (id uuid, nombre text)
 language sql security definer set search_path = public stable as $$
-  select id, nombre from perfiles where rol = 'jugador' order by nombre;
+  select id, nombre from perfiles where rol = 'jugador' and not demo order by nombre;
 $$;
 
 -- Desglossament de punts d'un jugador (públic).
@@ -307,7 +308,7 @@ begin
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
           and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p.id))::int
     from perfiles p
-    where p.rol = 'jugador'
+    where p.rol = 'jugador' and not p.demo
     order by p.nombre;
 end;
 $$;

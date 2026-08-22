@@ -12,7 +12,7 @@ export default function Plantilla() {
 
   async function cargar() {
     const [p, e] = await Promise.all([
-      supabase.from('perfiles').select('*').order('rol').order('nombre'),
+      supabase.from('perfiles').select('*').eq('demo', false).order('rol').order('nombre'),
       supabase.from('equipo').select('team_code,staff_code').maybeSingle(),
     ])
     setPerfiles((p.data as Perfil[]) ?? [])

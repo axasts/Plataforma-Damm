@@ -14,7 +14,7 @@ export default function Lesiones() {
 
   async function cargar() {
     const [j, l] = await Promise.all([
-      supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').order('nombre'),
+      supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').eq('demo', false).order('nombre'),
       supabase.from('lesiones').select('*').order('fecha_inicio', { ascending: false }),
     ])
     setJugadores((j.data as Jug[]) ?? [])

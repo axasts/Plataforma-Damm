@@ -37,7 +37,7 @@ export default function Sesion() {
     async function init() {
       const [ev, j, m] = await Promise.all([
         supabase.from('eventos').select('*').eq('id', eventoId).maybeSingle(),
-        supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').order('nombre'),
+        supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').eq('demo', false).order('nombre'),
         supabase.from('motivos_puntos').select('*').eq('activo', true).order('categoria').order('nombre'),
       ])
       const e = ev.data as Evento
