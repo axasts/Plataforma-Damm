@@ -11,6 +11,8 @@ Guía de los scripts SQL y del arranque de la BD. Todos se ejecutan en
 |--------|----------|--------|
 | `schema.sql` | Crea **todo**: tablas, RLS, funciones y datos iniciales (plantilla + entrenadores + catálogo de sanciones + reglas de alerta). **Reejecutarlo borra y recrea las tablas.** | En una BD nueva, o para resetear a fábrica. |
 | `migracion_puntos_evento.sql` | Añade la columna `puntos.evento_id` (liga cada punto a su sesión). No borra datos. | Solo si tienes una BD antigua creada **antes** de este cambio y no quieres re-ejecutar `schema.sql`. |
+| `migracion_plazos_encuestas.sql` | Redefine `get_pendientes` y `get_resumen_pendientes`: una encuesta deja de estar pendiente cuando ya no se puede responder (cerrada). No borra datos. | Si tienes una BD anterior a los plazos de cierre y no re-ejecutas `schema.sql`. |
+| `migracion_penalizaciones.sql` | Penalizaciones automáticas por encuestas: −1 al responder tarde, −2 si no se responde. Añade `puntos.codigo`, un trigger y `aplicar_penalizaciones()`. No borra datos. | Si tienes una BD anterior a las penalizaciones y no re-ejecutas `schema.sql`. |
 | `limpiar_datos.sql` | Vacía **datos de actividad** (eventos, wellness, rpe, puntos, asistencia, desconvocados, lesiones). **Mantiene** plantilla, posiciones, códigos, catálogo y reglas. | Para **empezar de cero** con el equipo real. Repetible. |
 | `demo_seed.sql` | Rellena datos de ejemplo (entrenos, partidos, wellness, rpe, puntos, una lesión…). | Solo para enseñar la app. |
 | `demo_users.sql` | Crea 2 logins ya confirmados: `jugador.demo@damm.local` y `admin.demo@damm.local` (contraseña `DemoDamm2026`). | Solo para probar sin registrarse. Requiere Email activado. |

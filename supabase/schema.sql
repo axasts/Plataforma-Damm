@@ -101,9 +101,15 @@ create table puntos (
   evento_id      uuid references eventos(id) on delete set null,  -- sessió on es va registrar
   fecha          date not null default current_date,
   registrado_por uuid references perfiles(id) on delete set null,
+  codigo         text,   -- penalitzacions automàtiques d'enquestes (well/rpe _tarde/_falta)
   created_at     timestamptz default now()
 );
 create index if not exists idx_puntos_evento on puntos(evento_id);
+
+-- Marca interna de les penalitzacions automàtiques d'enquestes (evita duplicats).
+--   Codis: well_tarde | well_falta | rpe_tarde | rpe_falta
+create unique index if not exists uq_puntos_codigo
+  on puntos(profile_id, evento_id, codigo) where codigo is not null;
 
 -- Respostes Wellness (una per jugador i esdeveniment).
 create table wellness (
@@ -269,10 +275,121 @@ language sql security definer set search_path = public stable as $$
   order by fecha desc, created_at desc;
 $$;
 
+-- ----------------------------------------------------------------------------
+--  PENALITZACIONS AUTOMÀTIQUES per encuestas (per enquesta: wellness i RPE):
+--    · Respondre TARDE (a_tiempo=false) → -1   (trigger en inserir la resposta)
+--    · NO respondre (enquesta ja tancada) → -2 (funció aplicar_penalizaciones)
+--  Només s'apliquen a partir de FECHA_INICIO. Tot idempotent (índex uq_puntos_codigo)
+--  i autocorregible (si respon o l'excusen, es retira la falta).
+-- ----------------------------------------------------------------------------
+
+-- TARDE → -1 (trigger al inserir una resposta wellness/rpe).
+create or replace function penalizar_tarde() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  v_tipo   text := tg_argv[0];                                   -- 'wellness' | 'rpe'
+  v_cod    text := case when v_tipo = 'wellness' then 'well' else 'rpe' end;
+  v_nombre text := case when v_tipo = 'wellness' then 'Wellness' else 'RPE' end;
+begin
+  -- Si llega una respuesta, retira una posible penalización de "sin responder".
+  delete from puntos
+   where profile_id = new.profile_id and evento_id = new.evento_id
+     and codigo = v_cod || '_falta';
+
+  if new.a_tiempo = false then
+    insert into puntos (profile_id, puntos, motivo, evento_id, fecha, codigo)
+    select new.profile_id, -1, v_nombre || ' respondido tarde',
+           new.evento_id, e.fecha, v_cod || '_tarde'
+    from eventos e where e.id = new.evento_id
+    on conflict (profile_id, evento_id, codigo) where codigo is not null
+    do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_wellness_tarde on wellness;
+drop trigger if exists trg_rpe_tarde on rpe;
+create trigger trg_wellness_tarde after insert on wellness
+  for each row execute function penalizar_tarde('wellness');
+create trigger trg_rpe_tarde after insert on rpe
+  for each row execute function penalizar_tarde('rpe');
+
+-- FALTA → -2 (barrido de enquestas tancades sin responder) + autocorrección.
+create or replace function aplicar_penalizaciones()
+returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  hoy          date := (now() at time zone 'Europe/Madrid')::date;
+  fecha_inicio constant date := date '2026-08-24';  -- solo de aquí en adelante
+  n int := 0;
+begin
+  -- Autocorrección: retira "sin responder" que ya no proceda.
+  delete from puntos pt
+  using eventos e
+  where pt.evento_id = e.id
+    and pt.codigo in ('well_falta','rpe_falta')
+    and (
+         (pt.codigo = 'well_falta' and exists (select 1 from wellness w where w.evento_id = pt.evento_id and w.profile_id = pt.profile_id))
+      or (pt.codigo = 'rpe_falta'  and exists (select 1 from rpe r      where r.evento_id = pt.evento_id and r.profile_id = pt.profile_id))
+      or exists (select 1 from desconvocados d where d.evento_id = pt.evento_id and d.profile_id = pt.profile_id)
+      or exists (select 1 from exenciones x where x.evento_id = pt.evento_id and x.profile_id = pt.profile_id
+                   and x.tipo = case when pt.codigo = 'well_falta' then 'wellness' else 'rpe' end)
+      or exists (select 1 from lesiones l where l.profile_id = pt.profile_id and e.fecha between l.fecha_inicio and l.fecha_fin)
+      or exists (select 1 from asistencia a where a.evento_id = pt.evento_id and a.profile_id = pt.profile_id and a.estado in ('lesionado','no_vino'))
+    );
+
+  -- WELLNESS sin responder (cerrado: terminó su día → e.fecha < hoy).
+  with faltas as (
+    insert into puntos (profile_id, puntos, motivo, evento_id, fecha, codigo)
+    select p.id, -2, 'Wellness sin responder', e.id, e.fecha, 'well_falta'
+    from eventos e
+    cross join perfiles p
+    where p.rol = 'jugador' and not p.demo
+      and e.fecha >= fecha_inicio
+      and e.fecha < hoy
+      and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
+      and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'wellness')
+      and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
+      and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p.id and a.estado in ('lesionado','no_vino'))
+      and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p.id)
+    on conflict (profile_id, evento_id, codigo) where codigo is not null do nothing
+    returning 1
+  )
+  select n + count(*) into n from faltas;
+
+  -- RPE sin responder (cerrado: pasó el día siguiente → e.fecha < hoy - 1).
+  with faltas as (
+    insert into puntos (profile_id, puntos, motivo, evento_id, fecha, codigo)
+    select p.id, -2, 'RPE sin responder', e.id, e.fecha, 'rpe_falta'
+    from eventos e
+    cross join perfiles p
+    where p.rol = 'jugador' and not p.demo
+      and e.fecha >= fecha_inicio
+      and e.fecha < hoy - 1
+      and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
+      and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'rpe')
+      and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
+      and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p.id and a.estado in ('lesionado','no_vino'))
+      and not exists (select 1 from rpe r where r.evento_id = e.id and r.profile_id = p.id)
+    on conflict (profile_id, evento_id, codigo) where codigo is not null do nothing
+    returning 1
+  )
+  select n + count(*) into n from faltas;
+
+  return n;
+end;
+$$;
+
 -- Enquestes pendents d'un jugador (per a la campaneta i els formularis).
 create or replace function get_pendientes(p_profile uuid)
 returns table (evento_id uuid, tipo_encuesta text, fecha date, titulo text, tipo_evento text)
 language plpgsql security definer set search_path = public stable as $$
+-- Només es mostren les enquestes que ENCARA es poden respondre:
+--   Wellness → el mateix dia de l'event (es tanca en acabar el dia).
+--   RPE      → el mateix dia i el següent (es tanca en acabar el dia següent).
+-- Data local (Europa/Madrid) per no tancar-les a mitjanit UTC.
+declare hoy date := (now() at time zone 'Europe/Madrid')::date;
 begin
   if p_profile <> my_profile_id() and not is_coach() then
     raise exception 'No autorizado';
@@ -282,7 +399,7 @@ begin
     -- els marcats com a lesionat/no vingut a l'assistència d'aquell event)
     select e.id, 'wellness'::text, e.fecha, e.titulo, e.tipo
     from eventos e
-    where e.fecha <= current_date
+    where e.fecha = hoy
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
       and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'wellness')
       and not exists (select 1 from lesiones l where l.profile_id = p_profile and e.fecha between l.fecha_inicio and l.fecha_fin)
@@ -292,7 +409,7 @@ begin
     -- RPE pendents (mateixes exclusions)
     select e.id, 'rpe'::text, e.fecha, e.titulo, e.tipo
     from eventos e
-    where e.fecha <= current_date
+    where e.fecha between hoy - 1 and hoy
       and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p_profile)
       and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p_profile and x.tipo = 'rpe')
       and not exists (select 1 from lesiones l where l.profile_id = p_profile and e.fecha between l.fecha_inicio and l.fecha_fin)
@@ -306,19 +423,21 @@ $$;
 create or replace function get_resumen_pendientes()
 returns table (profile_id uuid, nombre text, wellness_pend int, rpe_pend int)
 language plpgsql security definer set search_path = public stable as $$
+-- Mateixes finestres que get_pendientes: només compta el que encara es pot respondre.
+declare hoy date := (now() at time zone 'Europe/Madrid')::date;
 begin
   if not is_coach() then raise exception 'No autorizado'; end if;
   return query
     select p.id, p.nombre,
       (select count(*) from eventos e
-        where e.fecha <= current_date
+        where e.fecha = hoy
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
           and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'wellness')
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
           and not exists (select 1 from asistencia a where a.evento_id = e.id and a.profile_id = p.id and a.estado in ('lesionado','no_vino'))
           and not exists (select 1 from wellness w where w.evento_id = e.id and w.profile_id = p.id))::int,
       (select count(*) from eventos e
-        where e.fecha <= current_date
+        where e.fecha between hoy - 1 and hoy
           and not exists (select 1 from desconvocados d where d.evento_id = e.id and d.profile_id = p.id)
           and not exists (select 1 from exenciones x where x.evento_id = e.id and x.profile_id = p.id and x.tipo = 'rpe')
           and not exists (select 1 from lesiones l where l.profile_id = p.id and e.fecha between l.fecha_inicio and l.fecha_fin)
@@ -455,6 +574,7 @@ grant execute on function get_clasificacion()              to authenticated;
 grant execute on function get_jugadores_publicos()         to authenticated;
 grant execute on function get_desglose_jugador(uuid)       to authenticated;
 grant execute on function get_pendientes(uuid)             to authenticated;
+grant execute on function aplicar_penalizaciones()         to authenticated;
 grant execute on function get_resumen_pendientes()         to authenticated;
 grant execute on function generar_entrenamientos(date,date) to authenticated;
 

@@ -24,33 +24,56 @@ export function formatFechaLarga(iso: string): string {
   })
 }
 
-// ---- Finestres "a temps" ---------------------------------------------------
-// Wellness: dt/dc abans de 19:30, dv abans de 18:00; partit abans que acabi el dia.
-export function wellnessATiempo(evento: Evento, ahora = new Date()): boolean {
-  const fecha = new Date(evento.fecha + 'T00:00:00')
-  const finDia = new Date(evento.fecha + 'T23:59:59')
+// ---- Finestres de resposta -------------------------------------------------
+// Cada enquesta té tres estats segons quan es respon:
+//   'a_tiempo' → dins del termini (compta com a bona)
+//   'tarde'    → passat el termini, però encara es pot respondre
+//   'cerrado'  → passat el marge màxim: ja NO es pot respondre
+export type EstadoPlazo = 'a_tiempo' | 'tarde' | 'cerrado'
 
+// Wellness (enquesta del matí):
+//   · Entrenament: a temps fins les 18:00 del mateix dia.
+//   · Partit: a temps fins 1 h 30 min abans de l'hora del partit.
+//   · En tots dos casos es pot respondre tard fins que acaba el dia; després es tanca.
+export function wellnessPlazo(evento: Evento, ahora = new Date()): EstadoPlazo {
+  const finDia = new Date(evento.fecha + 'T23:59:59')
+  let limiteOk: Date
   if (evento.tipo === 'partido') {
-    return ahora <= finDia
+    if (evento.hora) {
+      // 1 h 30 min abans de l'hora del partit.
+      limiteOk = new Date(evento.fecha + 'T' + evento.hora)
+      limiteOk.setMinutes(limiteOk.getMinutes() - 90)
+    } else {
+      // Partit sense hora definida: no es pot calcular "1h30 abans";
+      // el considerem a temps mentre sigui el mateix dia.
+      limiteOk = finDia
+    }
+  } else {
+    limiteOk = new Date(evento.fecha + 'T18:00:00')
   }
-  // Entrenament: si es respon abans del dia, sempre a temps.
-  if (ahora < fecha) return true
-  // Mateix dia: segons el dia de la setmana.
-  const mismoDia = ahora.toISOString().slice(0, 10) === evento.fecha
-  if (!mismoDia) return false // dia posterior → tard
-  const dow = fecha.getDay() // 0=diu ... 5=div
-  const [hLim, mLim] = dow === 5 ? [18, 0] : [19, 30]
-  const limite = new Date(fecha)
-  limite.setHours(hLim, mLim, 0, 0)
-  return ahora <= limite
+  if (ahora <= limiteOk) return 'a_tiempo'
+  if (ahora <= finDia) return 'tarde'
+  return 'cerrado'
 }
 
-// RPE: a temps si es respon abans de les 02:00 del dia següent.
+// RPE (igual per a entrenament i partit):
+//   · A temps fins les 23:59 del mateix dia.
+//   · Es pot respondre tard fins al final del dia següent; després es tanca.
+export function rpePlazo(evento: Evento, ahora = new Date()): EstadoPlazo {
+  const finMismoDia = new Date(evento.fecha + 'T23:59:59')
+  const finDiaSiguiente = new Date(evento.fecha + 'T23:59:59')
+  finDiaSiguiente.setDate(finDiaSiguiente.getDate() + 1)
+  if (ahora <= finMismoDia) return 'a_tiempo'
+  if (ahora <= finDiaSiguiente) return 'tarde'
+  return 'cerrado'
+}
+
+// Compatibilitat: booleà "a temps" (per desar `a_tiempo` i per al panell d'entrenador).
+export function wellnessATiempo(evento: Evento, ahora = new Date()): boolean {
+  return wellnessPlazo(evento, ahora) === 'a_tiempo'
+}
 export function rpeATiempo(evento: Evento, ahora = new Date()): boolean {
-  const limite = new Date(evento.fecha + 'T00:00:00')
-  limite.setDate(limite.getDate() + 1)
-  limite.setHours(2, 0, 0, 0)
-  return ahora <= limite
+  return rpePlazo(evento, ahora) === 'a_tiempo'
 }
 
 // ---- Etiquetes de mètriques ------------------------------------------------

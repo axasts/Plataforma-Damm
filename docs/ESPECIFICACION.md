@@ -168,6 +168,26 @@ dinàmic i s'hi cometran errors).
   ho decideix l'entrenador).
 - **"Doblar sanció"** (expulsió no esportiva): es fa amb una **entrada manual**.
 
+#### Penalitzacions automàtiques per enquestes
+Es descompten sols de la classificació, **per enquesta** (wellness i RPE per
+separat, segons les finestres de §7.3 i §8.3):
+
+| Situació | Punts | Motiu al desglossament |
+|----------|------:|------------------------|
+| Respondre **tard** | −1 | `Wellness/RPE respondido tarde` |
+| **No respondre** (enquesta ja tancada) | −2 | `Wellness/RPE sin responder` |
+
+- El **−1** l'aplica un *trigger* en el moment d'enviar la resposta tard.
+- El **−2** l'aplica la funció `aplicar_penalizaciones()`, que revisa les enquestes
+  ja tancades sense resposta. L'app la crida sola en obrir el **Panel** d'entrenador
+  (i, opcionalment, es pot programar amb `pg_cron`).
+- **Idempotent i autocorregible:** no es dupliquen mai; i si el jugador acaba
+  responent o l'entrenador l'excusa / marca lesionat / no convocat, la penalització
+  de "sin responder" es retira sola.
+- Només s'apliquen a partir de la data d'inici (config. a la funció; per defecte
+  **24/08/2026**). No es toca res anterior.
+- No conten per a la mitjana setmanal del lesionat (com la resta de sancions).
+
 ### 6.4 Catàleg inicial de sancions (del reglament intern)
 
 **Entrenaments**
@@ -223,13 +243,14 @@ dinàmic i s'hi cometran errors).
 Al **matí, abans** dels entrenaments (dt/dc/dv) i **abans dels partits**.
 
 ### 7.3 Finestres "a temps"
-- **Dimarts:** abans de les **19:30**.
-- **Dimecres:** abans de les **19:30**.
-- **Divendres:** abans de les **18:00**.
-- **Partit:** abans que **acabi el dia** del partit.
+- **Entrenament (dt/dc/dv):** a temps fins les **18:00** del mateix dia.
+- **Partit:** a temps fins **1 h 30 min abans** de l'hora marcada al calendari.
+  *(Si el partit no té hora definida, es considera a temps mentre sigui el mateix dia.)*
 
-Fora de finestra → es pot respondre igualment, però queda marcada com
-**"respondida tarde"**. Les enquestes **no caduquen mai**.
+Passat el límit → es pot respondre igualment, però queda **"respondida tarde"**.
+El marge màxim per respondre és **fins que acaba el dia** del partit/entrenament;
+després l'enquesta **es tanca** i ja **no es pot respondre** (deixa de sortir com
+a pendent). Data de referència: **Europe/Madrid**.
 
 ---
 
@@ -245,8 +266,10 @@ Fora de finestra → es pot respondre igualment, però queda marcada com
 **Després** dels entrenaments (abans d'anar a dormir) i **després dels partits**.
 
 ### 8.3 Finestra "a temps"
-- A temps si es respon **abans de les 02:00** del dia següent.
-- Fora de finestra → **"respondida tarde"**. No caduca.
+- A temps si es respon **abans de les 23:59** del **mateix dia** (entrenament i partit).
+- Passat el límit → **"respondida tarde"**, amb marge fins al **final del dia següent**
+  (ex.: entrenament dimecres → fins dijous 23:59). Després l'enquesta **es tanca**
+  i ja **no es pot respondre**. Data de referència: **Europe/Madrid**.
 
 ---
 

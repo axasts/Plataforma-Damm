@@ -34,6 +34,10 @@ export default function CoachHome() {
   const [metricaCarga, setMetricaCarga] = useState('rpe_muscular')
 
   async function cargar() {
+    // Aplica las penalizaciones por encuestas (tarde/sin responder) antes de
+    // leer los datos, para que el panel y la clasificación reflejen lo último.
+    // Es idempotente: no duplica nada aunque se llame a menudo.
+    await supabase.rpc('aplicar_penalizaciones')
     const [jRes, wRes, rRes, reRes, pRes, lRes, psRes] = await Promise.all([
       supabase.from('perfiles').select('id,nombre,posicion').eq('rol', 'jugador').eq('demo', false),
       supabase.from('wellness').select('profile_id,sueno,fatiga,dolor_muscular,estres,animo,eventos(fecha)').order('created_at', { ascending: false }).limit(150),

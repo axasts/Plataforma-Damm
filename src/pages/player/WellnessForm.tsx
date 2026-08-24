@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { Evento } from '../../lib/types'
 import { Spinner, ScaleInput, PageHeader } from '../../components/ui'
-import { METRICAS_WELLNESS, wellnessATiempo, nombreEvento, formatFechaLarga } from '../../lib/utils'
+import { METRICAS_WELLNESS, wellnessPlazo, nombreEvento, formatFechaLarga } from '../../lib/utils'
 
 export default function WellnessForm() {
   const { eventoId } = useParams()
@@ -27,9 +27,16 @@ export default function WellnessForm() {
   if (!evento) return <Spinner />
 
   const completo = METRICAS_WELLNESS.every((m) => vals[m.key] !== null)
+  const plazo = wellnessPlazo(evento)
 
   async function guardar() {
     if (!completo || !perfil || !evento) return
+    // Fuera de plazo definitivo: ya no se puede responder.
+    const estado = wellnessPlazo(evento)
+    if (estado === 'cerrado') {
+      setError('El plazo para responder esta encuesta ya ha terminado.')
+      return
+    }
     // Cuenta demo: solo previsualización, no se guarda nada.
     if (perfil.demo) { nav('/'); return }
     setGuardando(true)
@@ -41,7 +48,7 @@ export default function WellnessForm() {
       estres: vals.estres, animo: vals.animo,
       zona_molestias: zona || null,
       comentario: comentario || null,
-      a_tiempo: wellnessATiempo(evento),
+      a_tiempo: estado === 'a_tiempo',
     })
     setGuardando(false)
     if (error) {
@@ -62,6 +69,14 @@ export default function WellnessForm() {
         subtitle={`${nombreEvento(evento)} · ${formatFechaLarga(evento.fecha)}`}
         action={<span className="font-display text-sm font-bold tabular-nums text-damm-muted">{hechas}<span className="text-damm-faint">/{METRICAS_WELLNESS.length}</span></span>}
       />
+
+      {plazo !== 'a_tiempo' && (
+        <div className={'mt-4 rounded-lg border px-3 py-2 text-sm ' + (plazo === 'cerrado' ? 'border-damm-red/30 bg-damm-red/10 text-[#ff8a95]' : 'border-damm-gold/30 bg-damm-gold/10 text-damm-gold')}>
+          {plazo === 'cerrado'
+            ? 'El plazo para responder ha terminado. Ya no se puede enviar esta encuesta.'
+            : 'Fuera de plazo: puedes enviarla, pero contará como respondida tarde.'}
+        </div>
+      )}
 
       {/* Preguntas separadas por filetes, sin una caja por cada una */}
       <div className="border-t border-damm-line">
@@ -86,8 +101,8 @@ export default function WellnessForm() {
 
       {error && <div className="mt-5 rounded-lg border border-damm-red/30 bg-damm-red/10 px-3 py-2 text-sm text-[#ff8a95]">{error}</div>}
 
-      <button className="btn-primary mt-6 w-full py-3" disabled={!completo || guardando} onClick={guardar}>
-        {guardando ? 'Guardando…' : completo ? 'Enviar wellness' : `Faltan ${METRICAS_WELLNESS.length - hechas} respuestas`}
+      <button className="btn-primary mt-6 w-full py-3" disabled={!completo || guardando || plazo === 'cerrado'} onClick={guardar}>
+        {guardando ? 'Guardando…' : plazo === 'cerrado' ? 'Plazo cerrado' : completo ? 'Enviar wellness' : `Faltan ${METRICAS_WELLNESS.length - hechas} respuestas`}
       </button>
     </div>
   )
