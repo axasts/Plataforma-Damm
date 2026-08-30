@@ -12,7 +12,7 @@ type Estado = 'ok' | 'lesionado' | 'no_vino'
 
 export default function Sesion() {
   const { eventoId } = useParams()
-  const { perfil } = useAuth()
+  const { perfil, usaPuntos } = useAuth()
   const nav = useNavigate()
   const [evento, setEvento] = useState<Evento | null>(null)
   const [jugadores, setJugadores] = useState<Jug[]>([])
@@ -40,7 +40,9 @@ export default function Sesion() {
       const [ev, j, m] = await Promise.all([
         supabase.from('eventos').select('*').eq('id', eventoId).maybeSingle(),
         supabase.from('perfiles').select('id,nombre').eq('rol', 'jugador').eq('demo', false).order('nombre'),
-        supabase.from('motivos_puntos').select('*').eq('activo', true).order('categoria').order('nombre'),
+        usaPuntos
+          ? supabase.from('motivos_puntos').select('*').eq('activo', true).order('categoria').order('nombre')
+          : Promise.resolve({ data: [] as Motivo[] }),
       ])
       const e = ev.data as Evento
       setEvento(e)
@@ -65,7 +67,7 @@ export default function Sesion() {
       // Lesiones activas en la fecha del evento → pre-marcar como lesionado
       const { data: les } = await supabase.from('lesiones').select('profile_id').lte('fecha_inicio', e.fecha).gte('fecha_fin', e.fecha)
       setLesionados(new Set(((les as any[]) ?? []).map((x) => x.profile_id)))
-      await cargarPuntos(eventoId!)
+      if (usaPuntos) await cargarPuntos(eventoId!)
       setCargando(false)
     }
     init()
@@ -302,7 +304,8 @@ export default function Sesion() {
         </div>
       </section>
 
-      {/* Puntos de la sesión */}
+      {/* Puntos de la sesión (solo equipos con sistema de puntos) */}
+      {usaPuntos && (
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between border-b border-damm-line2 pb-2">
           <h2 className="eyebrow text-damm-muted">Puntos de la sesión</h2>
@@ -329,6 +332,7 @@ export default function Sesion() {
           </div>
         )}
       </section>
+      )}
 
       {modal === 'ejercicio' && (
         <EjercicioModal jugadores={jugadores} onClose={() => setModal(null)} onApply={(pids, pts, nom) => aplicar(pids, pts, nom, null)} />

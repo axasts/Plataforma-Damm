@@ -16,7 +16,7 @@ interface Mov {
 
 export default function JugadorDetalle() {
   const { id } = useParams()
-  const { esEntrenador } = useAuth()
+  const { esEntrenador, usaPuntos } = useAuth()
   const nav = useNavigate()
   const [nombre, setNombre] = useState('')
   const [movs, setMovs] = useState<Mov[] | null>(null)
@@ -27,8 +27,13 @@ export default function JugadorDetalle() {
       const j = (data as any[])?.find((x) => x.id === id)
       setNombre(j?.nombre ?? 'Jugador')
     })
-    supabase.rpc('get_desglose_jugador', { p_id: id }).then(({ data }) => setMovs((data as Mov[]) ?? []))
-  }, [id])
+    // El desglose de puntos solo existe en equipos con sistema de puntos.
+    if (usaPuntos) {
+      supabase.rpc('get_desglose_jugador', { p_id: id }).then(({ data }) => setMovs((data as Mov[]) ?? []))
+    } else {
+      setMovs([])
+    }
+  }, [id, usaPuntos])
 
   if (!movs || !id) return <Spinner />
 
@@ -41,40 +46,44 @@ export default function JugadorDetalle() {
       <button onClick={() => nav(-1)} className="mb-3 text-sm text-damm-faint transition hover:text-damm-muted">← Volver</button>
       <h1 className="font-display text-2xl font-bold tracking-tight">{nombre}</h1>
 
-      <div className="my-5 grid grid-cols-3 divide-x divide-damm-line border-y border-damm-line">
-        <div className="px-3 py-4 text-center">
-          <p className="eyebrow text-damm-faint">Total</p>
-          <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-ink">{total}</p>
-        </div>
-        <div className="px-3 py-4 text-center">
-          <p className="eyebrow text-damm-faint">Sumados</p>
-          <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-good">+{sumados}</p>
-        </div>
-        <div className="px-3 py-4 text-center">
-          <p className="eyebrow text-damm-faint">Restados</p>
-          <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-red">{restados}</p>
-        </div>
-      </div>
-
-      <Section title="Movimientos de puntos">
-        {movs.length === 0 ? (
-          <EmptyState>Sin movimientos todavía.</EmptyState>
-        ) : (
-          <div className="card divide-y divide-white/5">
-            {movs.map((m, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-damm-ink">{m.motivo || 'Ajuste manual'}</p>
-                  <p className="text-xs capitalize text-damm-faint">{formatFecha(m.fecha)}</p>
-                </div>
-                <Badge color={m.puntos >= 0 ? 'green' : 'red'}>
-                  {m.puntos > 0 ? '+' : ''}{m.puntos}
-                </Badge>
-              </div>
-            ))}
+      {usaPuntos && (
+        <>
+          <div className="my-5 grid grid-cols-3 divide-x divide-damm-line border-y border-damm-line">
+            <div className="px-3 py-4 text-center">
+              <p className="eyebrow text-damm-faint">Total</p>
+              <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-ink">{total}</p>
+            </div>
+            <div className="px-3 py-4 text-center">
+              <p className="eyebrow text-damm-faint">Sumados</p>
+              <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-good">+{sumados}</p>
+            </div>
+            <div className="px-3 py-4 text-center">
+              <p className="eyebrow text-damm-faint">Restados</p>
+              <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-red">{restados}</p>
+            </div>
           </div>
-        )}
-      </Section>
+
+          <Section title="Movimientos de puntos">
+            {movs.length === 0 ? (
+              <EmptyState>Sin movimientos todavía.</EmptyState>
+            ) : (
+              <div className="card divide-y divide-white/5">
+                {movs.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-damm-ink">{m.motivo || 'Ajuste manual'}</p>
+                      <p className="text-xs capitalize text-damm-faint">{formatFecha(m.fecha)}</p>
+                    </div>
+                    <Badge color={m.puntos >= 0 ? 'green' : 'red'}>
+                      {m.puntos > 0 ? '+' : ''}{m.puntos}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        </>
+      )}
 
       {esEntrenador && (
         <div className="mt-8">

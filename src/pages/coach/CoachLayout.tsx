@@ -1,22 +1,24 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/auth'
 import { Escudo } from '../../components/ui'
-
-const LINKS = [
-  { to: '/', label: 'Panel', end: true },
-  { to: '/calendario', label: 'Calendario' },
-  { to: '/encuestas', label: 'Encuestas' },
-  { to: '/datos', label: 'Datos' },
-  { to: '/clasificacion', label: 'Ranking' },
-  { to: '/lesiones', label: 'Lesiones' },
-  { to: '/catalogo', label: 'Sanciones' },
-  { to: '/alertas', label: 'Alertas' },
-  { to: '/plantilla', label: 'Plantilla' },
-]
+import { NOMBRE_CLUB } from '../../config'
 
 export default function CoachLayout() {
-  const { perfil, signOut } = useAuth()
+  const { perfil, signOut, equipo, usaPuntos } = useAuth()
   const nav = useNavigate()
+
+  // Ranking i Sanciones només si l'equip usa punts.
+  const links = [
+    { to: '/', label: 'Panel', end: true },
+    { to: '/calendario', label: 'Calendario' },
+    { to: '/encuestas', label: 'Encuestas' },
+    { to: '/datos', label: 'Datos' },
+    ...(usaPuntos ? [{ to: '/clasificacion', label: 'Ranking' }] : []),
+    { to: '/lesiones', label: 'Lesiones' },
+    ...(usaPuntos ? [{ to: '/catalogo', label: 'Sanciones' }] : []),
+    { to: '/alertas', label: 'Alertas' },
+    { to: '/plantilla', label: 'Plantilla' },
+  ]
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-damm-bg">
@@ -25,7 +27,7 @@ export default function CoachLayout() {
           <div className="flex items-center gap-2.5">
             <Escudo size={30} />
             <div className="leading-tight">
-              <p className="font-display text-[13px] font-bold tracking-wide">CADET A · CF DAMM</p>
+              <p className="font-display text-[13px] font-bold tracking-wide">{(equipo?.nombre ?? NOMBRE_CLUB).toUpperCase()}</p>
               <p className="text-[11px] text-damm-faint">{perfil?.nombre} · Entrenador</p>
             </div>
           </div>
@@ -37,7 +39,7 @@ export default function CoachLayout() {
           </button>
         </div>
         <nav className="flex gap-5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {LINKS.map((l) => (
+          {links.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}

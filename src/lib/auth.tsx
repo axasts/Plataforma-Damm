@@ -1,13 +1,16 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import { Perfil } from './types'
+import { Perfil, Equipo } from './types'
 
 interface AuthState {
   session: Session | null
   perfil: Perfil | null
+  equipo: Equipo | null
   loading: boolean
   esEntrenador: boolean
+  // Interruptor mestre del sistema de punts, segons l'equip de l'usuari.
+  usaPuntos: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUpYReclamar: (
     email: string,
@@ -24,11 +27,13 @@ const Ctx = createContext<AuthState | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
+  const [equipo, setEquipo] = useState<Equipo | null>(null)
   const [loading, setLoading] = useState(true)
 
   async function cargarPerfil(uid: string | undefined) {
     if (!uid) {
       setPerfil(null)
+      setEquipo(null)
       return
     }
     const { data } = await supabase
@@ -37,6 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('user_id', uid)
       .maybeSingle()
     setPerfil((data as Perfil) ?? null)
+    // L'equip (nom + flag de punts) es llegeix amb una funció segura que no
+    // exposa els codis d'accés. Retorna una fila; agafem la primera.
+    if (data) {
+      const { data: eq } = await supabase.rpc('get_mi_equipo')
+      setEquipo(((eq as Equipo[]) ?? [])[0] ?? null)
+    } else {
+      setEquipo(null)
+    }
   }
 
   useEffect(() => {
@@ -93,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setPerfil(null)
+    setEquipo(null)
     setSession(null)
   }
 
@@ -105,8 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         session,
         perfil,
+        equipo,
         loading,
         esEntrenador: perfil?.rol === 'entrenador',
+        usaPuntos: equipo?.usa_puntos ?? false,
         signIn,
         signUpYReclamar,
         signOut,

@@ -101,7 +101,7 @@ export default function Login() {
           <div className="mt-12">
             <div className="mb-6 h-0.5 w-12 bg-damm-gold" />
             <h1 className="font-display text-5xl font-bold leading-[0.98] tracking-tight md:text-6xl">
-              Cadet A
+              Área privada
             </h1>
           </div>
         </div>

@@ -1,8 +1,16 @@
 export type Rol = 'jugador' | 'entrenador'
 
+// Dades públiques de l'equip de l'usuari (sense els codis d'accés secrets).
+export interface Equipo {
+  id: string
+  nombre: string
+  usa_puntos: boolean
+}
+
 export interface Perfil {
   id: string
   user_id: string | null
+  equipo_id: string
   nombre: string
   rol: Rol
   posicion: string | null

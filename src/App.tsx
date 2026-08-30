@@ -21,7 +21,7 @@ import ReglasAlerta from './pages/coach/ReglasAlerta'
 import Plantilla from './pages/coach/Plantilla'
 
 export default function App() {
-  const { loading, session, perfil } = useAuth()
+  const { loading, session, perfil, usaPuntos } = useAuth()
 
   if (loading) return <Spinner label="Cargando…" />
 
@@ -40,7 +40,8 @@ export default function App() {
           <Route path="/lesiones" element={<Lesiones />} />
           <Route path="/alertas" element={<ReglasAlerta />} />
           <Route path="/plantilla" element={<Plantilla />} />
-          <Route path="/clasificacion" element={<Clasificacion />} />
+          {usaPuntos && <Route path="/catalogo" element={<Catalogo />} />}
+          {usaPuntos && <Route path="/clasificacion" element={<Clasificacion />} />}
           <Route path="/jugador/:id" element={<JugadorDetalle />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
@@ -56,8 +57,8 @@ export default function App() {
         <Route path="/wellness/:eventoId" element={<WellnessForm />} />
         <Route path="/rpe/:eventoId" element={<RpeForm />} />
         <Route path="/estadisticas" element={<MisEstadisticas />} />
-        <Route path="/clasificacion" element={<Clasificacion />} />
-        <Route path="/jugador/:id" element={<JugadorDetalle />} />
+        {usaPuntos && <Route path="/clasificacion" element={<Clasificacion />} />}
+        {usaPuntos && <Route path="/jugador/:id" element={<JugadorDetalle />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

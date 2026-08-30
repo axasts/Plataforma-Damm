@@ -22,7 +22,7 @@ const METRICAS_CARGA = ['rpe_muscular', 'rpe_respiratorio', 'fatiga']
 const RPE_SET = new Set(['rpe_muscular', 'rpe_respiratorio'])
 
 export default function CoachHome() {
-  const { perfil } = useAuth()
+  const { perfil, usaPuntos } = useAuth()
   const [jug, setJug] = useState<Record<string, Jug>>({})
   const [wellness, setWellness] = useState<Resp[]>([])
   const [rpe, setRpe] = useState<Resp[]>([])
@@ -37,7 +37,8 @@ export default function CoachHome() {
     // Aplica las penalizaciones por encuestas (tarde/sin responder) antes de
     // leer los datos, para que el panel y la clasificación reflejen lo último.
     // Es idempotente: no duplica nada aunque se llame a menudo.
-    await supabase.rpc('aplicar_penalizaciones')
+    // Solo tiene sentido en equipos con sistema de puntos.
+    if (usaPuntos) await supabase.rpc('aplicar_penalizaciones')
     const [jRes, wRes, rRes, reRes, pRes, lRes, psRes] = await Promise.all([
       supabase.from('perfiles').select('id,nombre,posicion').eq('rol', 'jugador').eq('demo', false),
       supabase.from('wellness').select('profile_id,sueno,fatiga,dolor_muscular,estres,animo,eventos(fecha)').order('created_at', { ascending: false }).limit(150),
@@ -45,7 +46,9 @@ export default function CoachHome() {
       supabase.from('reglas_alerta').select('*').eq('activa', true),
       supabase.rpc('get_resumen_pendientes'),
       supabase.from('lesiones').select('profile_id,fecha_inicio,fecha_fin'),
-      supabase.from('puntos').select('profile_id,puntos,motivo,fecha').gte('fecha', inicioSemana()).lte('fecha', finSemana()),
+      usaPuntos
+        ? supabase.from('puntos').select('profile_id,puntos,motivo,fecha').gte('fecha', inicioSemana()).lte('fecha', finSemana())
+        : Promise.resolve({ data: [] as PuntoSemana[] }),
     ])
     const mapa: Record<string, Jug> = {}
     ;((jRes.data as Jug[]) ?? []).forEach((j) => (mapa[j.id] = j))
@@ -206,8 +209,10 @@ export default function CoachHome() {
         </div>
       </div>
 
-      {/* 5) Media semanal para lesionados */}
-      <MediaSemanal jugadores={Object.values(jug)} lesiones={lesiones} puntosSemana={puntosSemana} coachId={perfil?.id ?? null} onAplicado={cargar} />
+      {/* 5) Media semanal para lesionados (solo equipos con puntos) */}
+      {usaPuntos && (
+        <MediaSemanal jugadores={Object.values(jug)} lesiones={lesiones} puntosSemana={puntosSemana} coachId={perfil?.id ?? null} onAplicado={cargar} />
+      )}
     </div>
   )
 }

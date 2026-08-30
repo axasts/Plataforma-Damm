@@ -28,13 +28,23 @@ npm run build
 ## Enlace de alta para jugadores
 
 El "Primer acceso" está oculto en el login normal. Se reparte este enlace, que lo
-muestra:
+muestra (**el mismo para todos los equipos**):
 
     https://plataforma-damm.vercel.app/?alta
 
-Flujo del jugador: entrar por ese enlace → **Primer acceso** → código `DAMM2026`
-→ elegir su nombre → correo + contraseña → dentro. Después ya entra por la URL
-normal con **Entrar**.
+Flujo: entrar por ese enlace → **Primer acceso** → **código de su equipo** → elegir
+su nombre (la lista ya sale filtrada al equipo del código) → correo + contraseña →
+dentro. Después ya entra por la URL normal con **Entrar**.
+
+Códigos por equipo:
+
+| Equipo | Jugadores | Staff |
+|--------|-----------|-------|
+| Cadet A / S16 | `DAMM2026` | `STAFF2026` |
+| Sub 15 | `DAMMS15` | `STAFFS15` |
+
+> Un **único web/Vercel** sirve a los dos equipos: el equipo del usuario se
+> determina al hacer login. El Sub 15 verá la app **sin puntos ni sanciones**.
 
 ## Usuario demo (vista de jugador)
 

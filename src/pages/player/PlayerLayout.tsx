@@ -2,9 +2,10 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { ReactNode } from 'react'
 import { useAuth } from '../../lib/auth'
 import { Escudo } from '../../components/ui'
+import { NOMBRE_CLUB } from '../../config'
 
 export default function PlayerLayout() {
-  const { perfil, signOut } = useAuth()
+  const { perfil, signOut, equipo, usaPuntos } = useAuth()
   const nav = useNavigate()
 
   return (
@@ -14,7 +15,7 @@ export default function PlayerLayout() {
           <Escudo size={30} />
           <div className="leading-tight">
             <p className="font-display text-[13px] font-bold tracking-wide">{perfil?.nombre}</p>
-            <p className="text-[11px] text-damm-faint">Cadet A · CF Damm</p>
+            <p className="text-[11px] text-damm-faint">{equipo?.nombre ?? NOMBRE_CLUB}</p>
           </div>
         </div>
         <button
@@ -31,7 +32,7 @@ export default function PlayerLayout() {
 
       <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-lg items-center justify-around border-t border-damm-line bg-damm-panel/95 py-2 backdrop-blur">
         <Tab to="/" label="Inicio" icon={<IconHome />} />
-        <Tab to="/clasificacion" label="Ranking" icon={<IconTrophy />} />
+        {usaPuntos && <Tab to="/clasificacion" label="Ranking" icon={<IconTrophy />} />}
         <Tab to="/estadisticas" label="Mis datos" icon={<IconChart />} />
       </nav>
     </div>

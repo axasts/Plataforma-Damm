@@ -1,4 +1,4 @@
-# Plataforma Cadet A — CF Damm
+# Plataforma CF Damm
 
 Especificació funcional del projecte. Document viu: recull tot el que hem
 acordat durant la planificació i serveix de guia per a la construcció.
@@ -6,8 +6,30 @@ acordat durant la planificació i serveix de guia per a la construcció.
 > **Idioma de la interfície:** castellà.
 > **Estat:** ✅ implementat i **desplegat a producció** (https://plataforma-damm.vercel.app).
 > Rediseño visual (dark premium) aplicat i **model operatiu centrat en el calendari**
-> (veure §0). Pendent: activar Email a Supabase i començar amb dades netes.
+> (veure §0). **Multi-equip** afegit (veure §0-bis).
 > Veure `docs/ESTADO.md`, `docs/BASE_DE_DATOS.md` i `docs/DESPLIEGUE.md`.
+
+---
+
+## 0-bis. Multi-equip (afegit 08/2026 — mana sobre la resta)
+
+La plataforma allotja **diversos equips del CF Damm** en una mateixa base de dades:
+
+- Cada equip és una fila de `equipo` amb els seus **codis** i un flag **`usa_puntos`**.
+  - **Cadet A / S16:** `usa_puntos = true` (tot el sistema de punts actiu).
+  - **Sub 15:** `usa_puntos = false` → **sense** classificació, sancions, catàleg
+    ni penalitzacions automàtiques. Manté wellness, RPE, assistència, lesions,
+    alertes, calendari i el panell.
+- **Aïllament:** `perfiles`, `eventos`, `motivos_puntos` i `reglas_alerta` porten
+  `equipo_id`; les funcions i les RLS filtren pel meu equip (`my_team()`). Un
+  entrenador **només veu el seu equip**.
+- **Un sol web:** l'equip de l'usuari es determina al login (pel seu perfil); no cal
+  un desplegament per equip. El frontend amaga la puntuació segons `usaPuntos`.
+- **Alta:** els codis són **únics per equip** i identifiquen equip + rol, així que la
+  llista de "Primer acceso" ja surt filtrada. Codis: Cadet A `DAMM2026`/`STAFF2026`,
+  Sub 15 `DAMMS15`/`STAFFS15`.
+- Tot el que descriuen els apartats següents sobre **punts/sancions** aplica només
+  als equips amb `usa_puntos = true`.
 
 ---
 
@@ -343,19 +365,21 @@ Els entrenadors només marquen les excepcions (ràpid).
 
 | Taula | Contingut |
 |-------|-----------|
-| `equipo` | Dades de l'equip i codis d'accés (equip / entrenador). |
-| `perfiles` | Usuaris: nom, rol (jugador/entrenador), posició, correo, user_id. |
-| `eventos` | Entrenos (auto dt/dc/dv) i partits (amb data/hora). |
+| `equipo` | **Una fila per equip:** nom, codis d'accés (equip / entrenador) i **`usa_puntos`**. |
+| `perfiles` | Usuaris: **`equipo_id`**, nom, rol (jugador/entrenador), posició, correo, user_id. |
+| `eventos` | **`equipo_id`**, entrenos (auto dt/dc/dv) i partits (amb data/hora). |
 | `convocatorias` | No convocats per partit (exclusió d'enquestes). |
-| `motivos_puntos` | Catàleg de sancions/premis, editable. |
+| `motivos_puntos` | **`equipo_id`**, catàleg de sancions/premis, editable. |
 | `puntos` | Moviments +/−: jugador, punts, motiu, data, registrat_per. |
 | `wellness` | Respostes: 5 mètriques + zona + comentari, estat (a temps/tard). |
 | `rpe` | Respostes: muscular + respiratori, estat (a temps/tard). |
 | `asistencia` | Estat per jugador/esdeveniment (OK / lesionat / no ha vingut). |
 | `lesiones` | Períodes de lesió (inici, fi/durada). |
-| `reglas_alerta` | Llindars d'avís configurables. |
+| `reglas_alerta` | **`equipo_id`**, llindars d'avís configurables. |
 
 > Esquema orientatiu; es concreta a la Fase 1 amb les regles RLS.
+> Funcions multi-equip: `my_team()`, `same_team()`, `get_mi_equipo()` i el trigger
+> `set_equipo_id()`.
 
 ---
 

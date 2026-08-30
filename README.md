@@ -1,8 +1,13 @@
-# Plataforma Cadet A · CF Damm
+# Plataforma CF Damm
 
-Web interna del equipo **Cadet A del CF Damm**: clasificación por puntos,
-encuestas de **Wellness** y **RPE**, asistencia, lesiones y panel de entrenador.
-Todo se gestiona **desde el calendario** (sesiones de entrenamiento y partido).
+Web interna de los equipos del **CF Damm**: encuestas de **Wellness** y **RPE**,
+asistencia, lesiones, panel de entrenador y —en los equipos que lo usan—
+clasificación por puntos. Todo se gestiona **desde el calendario** (sesiones de
+entrenamiento y partido).
+
+> **Multi-equipo:** una misma BD aloja varios equipos (Cadet A / S16 con puntos,
+> Sub 15 sin puntos). Un único web sirve a todos; el equipo se decide al hacer
+> login. El flag `usa_puntos` de cada equipo activa o no todo el sistema de puntos.
 
 - **Frontend:** React + Vite + TypeScript + Tailwind (en castellano, tema oscuro).
 - **Backend:** Supabase (Auth + Postgres + RLS).
@@ -28,22 +33,28 @@ npm run build      # tsc -b && vite build
 
 ## Puesta en marcha (resumen)
 
-1. Ejecutar [`supabase/schema.sql`](supabase/schema.sql) en Supabase (crea todo).
-2. Supabase → Authentication → Providers → **Email activado** y **"Confirm email"
-   desactivado** (obligatorio para los logins).
-3. Para empezar el uso real con datos limpios: [`supabase/limpiar_datos.sql`](supabase/limpiar_datos.sql).
+Sobre la **BD actual** (que ya tiene el Cadet A), en orden:
 
-Códigos: jugadores `DAMM2026` · entrenadores `STAFF2026`.
+1. [`supabase/migracion_multiequipo.sql`](supabase/migracion_multiequipo.sql) — convierte la BD a multi-equipo (aditiva, no borra datos).
+2. [`supabase/seed_sub15.sql`](supabase/seed_sub15.sql) — crea el equipo Sub 15 (sin puntos).
+3. Supabase → Authentication → Providers → **Email activado** y **"Confirm email"
+   desactivado** (obligatorio para los logins).
+
+_(Para una BD nueva de un solo equipo existe [`supabase/schema.sql`](supabase/schema.sql);
+no lo ejecutes sobre la BD real, borra las tablas.)_
+
+Códigos: **Cadet A** jugadores `DAMM2026` · staff `STAFF2026` — **Sub 15**
+jugadores `DAMMS15` · staff `STAFFS15`.
 
 ## Cómo se usa
 
-- **Jugadores:** entran por el enlace de alta `…/?alta` la primera vez (código
-  `DAMM2026` → elegir nombre → correo + contraseña). Después ven **Inicio**
-  (encuestas pendientes), **Ranking** y **Mis datos** (evolución + desglose de
-  sus puntos). No ven las posiciones.
-- **Entrenadores:** **Panel** (medias de equipo, buscador por valor, alertas,
-  carga por demarcación, media semanal de lesionados), **Calendario** (crea
-  sesiones y gestiona disponibilidad, ejercicios y sanciones desde cada día),
-  **Ranking**, **Lesiones**, **Sanciones** (catálogo), **Alertas** y **Plantilla**.
+- **Jugadores:** entran por el enlace de alta `…/?alta` la primera vez (código de
+  su equipo → elegir nombre → correo + contraseña). Después ven **Inicio**
+  (encuestas pendientes) y **Mis datos** (evolución), y **Ranking** + desglose de
+  puntos **solo si su equipo usa puntos**. No ven las posiciones.
+- **Entrenadores:** **Panel**, **Calendario** (sesiones: disponibilidad, y en
+  equipos con puntos ejercicios/sanciones), **Lesiones**, **Alertas** y
+  **Plantilla**; y **Ranking** + **Sanciones** (catálogo) **solo si el equipo usa
+  puntos**.
 
 El despliegue es automático al hacer push a `claude/project-planning-nnsso1`.
