@@ -85,6 +85,9 @@ un día desde el calendario.
   y expone `equipo` y **`usaPuntos`**. Cuando `usaPuntos = false` se ocultan Ranking,
   Sanciones, la sección de puntos de la Sesión, "Media semanal", los bloques de
   puntos de _Mis datos_ y _JugadorDetalle_, y las rutas `/clasificacion` y `/catalogo`.
+- **Horario de entrenos por equipo:** `equipo.horario_entreno` (jsonb día→hora)
+  define qué días genera "Generar entrenos" y con qué hora. Cadet A = dt/dc/dv
+  (sin hora); Sub 15 = dt/dj/dv (dt/dv 18:30, dj 19:30).
 - **Un solo web/Vercel:** no hace falta un despliegue por equipo. El login decide.
 - **Alta:** el código identifica equipo **y** rol, así que la lista de "Primer
   acceso" ya sale filtrada al equipo correcto.
@@ -156,6 +159,8 @@ Enlace de alta para jugadores: https://plataforma-damm.vercel.app/?alta
 supabase/schema.sql                 → BD versión 1 equipo (referencia; superado por la migración)
 supabase/migracion_multiequipo.sql  → convierte la BD a multi-equipo (aditiva, no borra)
 supabase/seed_sub15.sql             → crea el equipo Sub 15 (sin puntos)
+supabase/migracion_dias_entreno.sql → horario de entrenos por equipo (equipo.horario_entreno)
+supabase/fix_codigos_sub15.sql      → corrige códigos del Sub 15 (DAMMS15/STAFFS15)
 supabase/migracion_puntos_evento.sql→ añade puntos.evento_id (BD antigua)
 supabase/limpiar_datos.sql          → vacía datos de actividad (empezar de cero)
 supabase/demo_seed.sql              → datos de ejemplo (demo)
