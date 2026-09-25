@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import { Spinner } from './components/ui'
 import Login from './pages/Login'
+import NuevaPassword from './pages/NuevaPassword'
 import PlayerLayout from './pages/player/PlayerLayout'
 import PlayerHome from './pages/player/PlayerHome'
 import WellnessForm from './pages/player/WellnessForm'
@@ -21,9 +22,11 @@ import ReglasAlerta from './pages/coach/ReglasAlerta'
 import Plantilla from './pages/coach/Plantilla'
 
 export default function App() {
-  const { loading, session, perfil, usaPuntos } = useAuth()
+  const { loading, session, perfil, usaPuntos, recuperando } = useAuth()
 
   if (loading) return <Spinner label="Cargando…" />
+
+  if (session && recuperando) return <NuevaPassword />
 
   if (!session || !perfil) return <Login />
 

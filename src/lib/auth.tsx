@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { Session } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import { supabase, venimDeRecuperacio } from './supabase'
 import { Perfil, Equipo } from './types'
 
 interface AuthState {
@@ -19,6 +19,10 @@ interface AuthState {
     code: string,
   ) => Promise<void>
   signOut: () => Promise<void>
+  // Recuperació de contrasenya: true quan s'ha entrat per l'enllaç del correu.
+  recuperando: boolean
+  enviarRecuperacion: (email: string) => Promise<void>
+  cambiarPassword: (password: string) => Promise<void>
   refrescarPerfil: () => Promise<void>
 }
 
@@ -29,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [equipo, setEquipo] = useState<Equipo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recuperando, setRecuperando] = useState(venimDeRecuperacio)
 
   async function cargarPerfil(uid: string | undefined) {
     if (!uid) {
@@ -58,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await cargarPerfil(data.session?.user.id)
       setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (e, s) => {
+      if (e === 'PASSWORD_RECOVERY') setRecuperando(true)
       setSession(s)
       await cargarPerfil(s?.user.id)
     })
@@ -105,9 +111,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut()
+    setRecuperando(false)
     setPerfil(null)
     setEquipo(null)
     setSession(null)
+  }
+
+  async function enviarRecuperacion(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+    if (error) throw error
+  }
+
+  async function cambiarPassword(password: string) {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+    setRecuperando(false)
   }
 
   async function refrescarPerfil() {
@@ -126,6 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUpYReclamar,
         signOut,
+        recuperando,
+        enviarRecuperacion,
+        cambiarPassword,
         refrescarPerfil,
       }}
     >
