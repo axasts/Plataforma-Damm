@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Escudo } from '../components/ui'
 
-type Modo = 'entrar' | 'alta'
+type Modo = 'entrar' | 'alta' | 'recuperar'
 
 interface OpcionPerfil {
   id: string
@@ -12,12 +12,13 @@ interface OpcionPerfil {
 }
 
 export default function Login() {
-  const { signIn, signUpYReclamar } = useAuth()
+  const { signIn, signUpYReclamar, enviarRecuperacion } = useAuth()
   // El alta ("primer acceso") solo se muestra si se entra por el enlace con ?alta
   const altaPermitida = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('alta')
   const [modo, setModo] = useState<Modo>(altaPermitida ? 'alta' : 'entrar')
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [enviado, setEnviado] = useState(false)
 
   // Entrar
   const [email, setEmail] = useState('')
@@ -64,6 +65,20 @@ export default function Login() {
     }
   }
 
+  async function onRecuperar(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setCargando(true)
+    try {
+      await enviarRecuperacion(email.trim())
+      setEnviado(true)
+    } catch (err: any) {
+      setError(traducir(err.message))
+    } finally {
+      setCargando(false)
+    }
+  }
+
   async function onAlta(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -80,6 +95,7 @@ export default function Login() {
   function cambiarModo(m: Modo) {
     setModo(m)
     setError('')
+    setEnviado(false)
     if (m === 'entrar') setOpciones(null)
   }
 
@@ -133,6 +149,34 @@ export default function Login() {
               </Campo>
               <button className="btn-primary w-full" disabled={cargando}>
                 {cargando ? 'Entrando…' : 'Entrar'}
+              </button>
+              <button type="button" className="w-full text-center text-xs font-medium text-damm-faint hover:text-damm-muted" onClick={() => cambiarModo('recuperar')}>
+                ¿Has olvidado tu contraseña?
+              </button>
+            </form>
+          )}
+
+          {modo === 'recuperar' && (
+            <form onSubmit={onRecuperar} className="space-y-5">
+              {enviado ? (
+                <p className="text-sm text-damm-muted">
+                  Si el correo tiene cuenta, te llegará un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-damm-muted">
+                    Escribe tu correo y te enviaremos un enlace para crear una contraseña nueva.
+                  </p>
+                  <Campo label="Correo">
+                    <input className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </Campo>
+                  <button className="btn-primary w-full" disabled={cargando}>
+                    {cargando ? 'Enviando…' : 'Enviar enlace'}
+                  </button>
+                </>
+              )}
+              <button type="button" className="w-full text-center text-xs font-medium text-damm-faint hover:text-damm-muted" onClick={() => cambiarModo('entrar')}>
+                ← Volver a entrar
               </button>
             </form>
           )}
@@ -219,6 +263,7 @@ function Campo({ label, children }: { label: string; children: ReactNode }) {
 function traducir(msg: string): string {
   if (/Invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos.'
   if (/already registered/i.test(msg)) return 'Ese correo ya tiene cuenta. Usa "Entrar".'
+  if (/rate limit|security purposes/i.test(msg)) return 'Has pedido demasiados correos. Espera unos minutos y vuelve a probar.'
   if (/Password should be/i.test(msg)) return 'La contraseña debe tener al menos 6 caracteres.'
   return msg
 }
