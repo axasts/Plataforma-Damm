@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { Spinner, EmptyState, Section, Badge } from '../../components/ui'
-import { formatFecha, hoyISO, nombreEvento } from '../../lib/utils'
+import { formatFecha, hoyISO, nombreEvento, inicioClasificacionActual } from '../../lib/utils'
 import StatsCharts from '../../components/StatsCharts'
 import { Evento } from '../../lib/types'
 
@@ -20,6 +20,7 @@ export default function JugadorDetalle() {
   const nav = useNavigate()
   const [nombre, setNombre] = useState('')
   const [movs, setMovs] = useState<Mov[] | null>(null)
+  const [inicio, setInicio] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -29,7 +30,10 @@ export default function JugadorDetalle() {
     })
     // El desglose de puntos solo existe en equipos con sistema de puntos.
     if (usaPuntos) {
-      supabase.rpc('get_desglose_jugador', { p_id: id }).then(({ data }) => setMovs((data as Mov[]) ?? []))
+      Promise.all([supabase.rpc('get_desglose_jugador', { p_id: id }), inicioClasificacionActual()]).then(([{ data }, ini]) => {
+        setInicio(ini)
+        setMovs((data as Mov[]) ?? [])
+      })
     } else {
       setMovs([])
     }
@@ -37,9 +41,12 @@ export default function JugadorDetalle() {
 
   if (!movs || !id) return <Spinner />
 
-  const sumados = movs.filter((m) => m.puntos > 0).reduce((a, m) => a + m.puntos, 0)
-  const restados = movs.filter((m) => m.puntos < 0).reduce((a, m) => a + m.puntos, 0)
+  // Totals de la classificació actual (la que es reseteja); la històrica suma tot.
+  const movsActual = inicio ? movs.filter((m) => m.fecha >= inicio) : movs
+  const sumados = movsActual.filter((m) => m.puntos > 0).reduce((a, m) => a + m.puntos, 0)
+  const restados = movsActual.filter((m) => m.puntos < 0).reduce((a, m) => a + m.puntos, 0)
   const total = sumados + restados
+  const totalHistorico = movs.reduce((a, m) => a + m.puntos, 0)
 
   return (
     <div>
@@ -50,7 +57,7 @@ export default function JugadorDetalle() {
         <>
           <div className="my-5 grid grid-cols-3 divide-x divide-damm-line border-y border-damm-line">
             <div className="px-3 py-4 text-center">
-              <p className="eyebrow text-damm-faint">Total</p>
+              <p className="eyebrow text-damm-faint">{inicio ? 'Actual' : 'Total'}</p>
               <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-ink">{total}</p>
             </div>
             <div className="px-3 py-4 text-center">
@@ -62,6 +69,11 @@ export default function JugadorDetalle() {
               <p className="mt-1.5 font-display text-2xl font-bold tabular-nums text-damm-red">{restados}</p>
             </div>
           </div>
+          {inicio && (
+            <p className="-mt-3 mb-6 text-center text-xs text-damm-faint">
+              Clasificación histórica: <span className="font-semibold tabular-nums text-damm-muted">{totalHistorico}</span> puntos
+            </p>
+          )}
 
           <Section title="Movimientos de puntos">
             {movs.length === 0 ? (

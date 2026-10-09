@@ -54,6 +54,16 @@ export interface FilaClasificacion {
   total: number
 }
 
+// Període de la classificació "reseteable". La històrica (tots els punts) no
+// en té: és la suma de tot. Veure supabase/migracion_clasificaciones.sql.
+export interface PeriodoClasificacion {
+  id: string
+  nombre: string
+  fecha_inicio: string
+  fecha_fin: string | null
+  activa: boolean
+}
+
 export interface Wellness {
   id: string
   profile_id: string

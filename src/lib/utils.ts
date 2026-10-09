@@ -1,4 +1,5 @@
 import { Evento } from './types'
+import { supabase } from './supabase'
 
 // ---- Dates -----------------------------------------------------------------
 
@@ -148,4 +149,14 @@ export function ordenPosicion(posicion: string | null): number {
   else base = 900 // desconocida, antes de "sin posición"
 
   return base + lado
+}
+
+// ---- Classificació actual ----------------------------------------------------
+// Data d'inici de la classificació "reseteable" en curs (null si la BD encara no
+// té la migració de classificacions → es compta tot, com abans).
+export async function inicioClasificacionActual(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_clasificaciones')
+  if (error) return null
+  const activa = ((data as { fecha_inicio: string; activa: boolean }[]) ?? []).find((p) => p.activa)
+  return activa?.fecha_inicio ?? null
 }

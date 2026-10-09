@@ -161,6 +161,7 @@ supabase/migracion_multiequipo.sql  → convierte la BD a multi-equipo (aditiva,
 supabase/seed_sub15.sql             → crea el equipo Sub 15 (sin puntos)
 supabase/migracion_dias_entreno.sql → horario de entrenos por equipo (equipo.horario_entreno)
 supabase/fix_codigos_sub15.sql      → corrige códigos del Sub 15 (DAMMS15/STAFFS15)
+supabase/migracion_clasificaciones.sql → clasificación actual (reseteable) + histórica
 supabase/migracion_puntos_evento.sql→ añade puntos.evento_id (BD antigua)
 supabase/limpiar_datos.sql          → vacía datos de actividad (empezar de cero)
 supabase/demo_seed.sql              → datos de ejemplo (demo)
@@ -195,7 +196,20 @@ La puntuación se oculta en todo el frontend según `useAuth().usaPuntos` (el fl
 - **Multi-equipo:** frontend adaptado (equipo + `usaPuntos` desde la BD; puntos
   ocultables). Scripts `migracion_multiequipo.sql` y `seed_sub15.sql` preparados.
 
+- **Dos clasificaciones (10/2026):** en **Ranking** hay pestañas **Actual** y
+  **Histórica**. La histórica suma todos los puntos y no se resetea nunca. La
+  actual la resetea un entrenador con **"Nueva clasificación"** (nombre + fecha de
+  inicio); los períodos anteriores quedan guardados y se pueden consultar con el
+  desplegable. Un punto cuenta en el período según su `fecha` (la del evento).
+  "Deshacer esta clasificación" elimina el último reset (no borra puntos).
+  _Mis datos_ y la ficha del jugador muestran los puntos de la actual + el total
+  histórico. Requiere ejecutar **`supabase/migracion_clasificaciones.sql`**; sin
+  ella la app sigue funcionando como antes (sin pestañas).
+
 ## 9. ⏳ Pendiente / próximos pasos
+
+0. **Ejecutar `supabase/migracion_clasificaciones.sql`** en Supabase para activar
+   la clasificación reseteable + histórica.
 
 1. **Ejecutar la migración multi-equipo** (`migracion_multiequipo.sql`) en la BD
    real, con backup previo, y luego **`seed_sub15.sql`** para crear el Sub 15.
