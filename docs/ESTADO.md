@@ -163,6 +163,7 @@ supabase/migracion_dias_entreno.sql → horario de entrenos por equipo (equipo.h
 supabase/fix_codigos_sub15.sql      → corrige códigos del Sub 15 (DAMMS15/STAFFS15)
 supabase/migracion_clasificaciones.sql → clasificación actual (reseteable) + histórica
 supabase/migracion_multiperfil.sql   → mismo correo en varios equipos (elegir equipo al entrar)
+supabase/migracion_excusas.sql      → excusar encuesta = sin penalización (también a posteriori)
 supabase/migracion_puntos_evento.sql→ añade puntos.evento_id (BD antigua)
 supabase/limpiar_datos.sql          → vacía datos de actividad (empezar de cero)
 supabase/demo_seed.sql              → datos de ejemplo (demo)
@@ -212,6 +213,10 @@ La puntuación se oculta en todo el frontend según `useAuth().usaPuntos` (el fl
   luego puede cambiar con **"Cambiar equipo"** (arriba). Para añadir el segundo
   equipo: enlace `?alta` → código del otro equipo → **mismo correo y misma
   contraseña**. Requiere **`supabase/migracion_multiperfil.sql`**.
+
+- **Excusas sin penalización (10/2026):** excusar un Wellness/RPE (en la Sesión),
+  aunque sea a posteriori, retira al momento el −1 de "tarde" y el −2 de "sin
+  responder" de esa encuesta. Requiere **`supabase/migracion_excusas.sql`**.
 
 ## 9. ⏳ Pendiente / próximos pasos
 
