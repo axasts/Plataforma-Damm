@@ -20,15 +20,19 @@ import Encuestas from './pages/coach/Encuestas'
 import Datos from './pages/coach/Datos'
 import ReglasAlerta from './pages/coach/ReglasAlerta'
 import Plantilla from './pages/coach/Plantilla'
+import ElegirEquipo from './pages/ElegirEquipo'
 
 export default function App() {
-  const { loading, session, perfil, usaPuntos, recuperando } = useAuth()
+  const { loading, session, perfil, usaPuntos, recuperando, debeElegirEquipo } = useAuth()
 
   if (loading) return <Spinner label="Cargando…" />
 
   if (session && recuperando) return <NuevaPassword />
 
   if (!session || !perfil) return <Login />
+
+  // Mateix correu a diversos equips → primer tria amb quin entra.
+  if (debeElegirEquipo) return <ElegirEquipo />
 
   if (perfil.rol === 'entrenador') {
     return (

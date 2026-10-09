@@ -5,7 +5,7 @@ import { Escudo } from '../../components/ui'
 import { NOMBRE_CLUB } from '../../config'
 
 export default function PlayerLayout() {
-  const { perfil, signOut, equipo, usaPuntos } = useAuth()
+  const { perfil, signOut, equipo, usaPuntos, misEquipos, cambiarEquipo } = useAuth()
   const nav = useNavigate()
 
   return (
@@ -18,12 +18,19 @@ export default function PlayerLayout() {
             <p className="text-[11px] text-damm-faint">{equipo?.nombre ?? NOMBRE_CLUB}</p>
           </div>
         </div>
-        <button
-          onClick={async () => { await signOut(); nav('/') }}
-          className="rounded-lg border border-damm-line px-3 py-1.5 text-xs font-semibold text-damm-muted transition hover:bg-white/5 hover:text-damm-ink"
-        >
-          Salir
-        </button>
+        <div className="flex items-center gap-2">
+          {misEquipos.length > 1 && (
+            <button onClick={cambiarEquipo} className="rounded-lg border border-damm-line px-3 py-1.5 text-xs font-semibold text-damm-muted transition hover:bg-white/5 hover:text-damm-ink">
+              Cambiar equipo
+            </button>
+          )}
+          <button
+            onClick={async () => { await signOut(); nav('/') }}
+            className="rounded-lg border border-damm-line px-3 py-1.5 text-xs font-semibold text-damm-muted transition hover:bg-white/5 hover:text-damm-ink"
+          >
+            Salir
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-6 pb-24">
