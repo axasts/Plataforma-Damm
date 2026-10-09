@@ -28,10 +28,13 @@ export default function Clasificacion() {
   const [periodoId, setPeriodoId] = useState<string | null>(null)
   const [filas, setFilas] = useState<FilaClasificacion[] | null>(null)
   const [abrirNueva, setAbrirNueva] = useState(false)
+  // Error al leer los períodos (normalmente: falta la migración en Supabase).
+  const [errorPeriodos, setErrorPeriodos] = useState<string | null>(null)
 
   async function cargarPeriodos() {
     const { data, error } = await supabase.rpc('get_clasificaciones')
     const ps = error ? [] : ((data as PeriodoClasificacion[]) ?? [])
+    setErrorPeriodos(error ? error.message : null)
     setPeriodos(ps)
     setPeriodoId(ps.find((p) => p.activa)?.id ?? null)
   }
@@ -72,6 +75,13 @@ export default function Clasificacion() {
           ) : undefined
         }
       />
+
+      {esEntrenador && errorPeriodos && (
+        <p className="mb-6 rounded-lg border border-damm-gold/40 px-4 py-3 text-xs text-damm-muted">
+          <b className="text-damm-gold">Clasificaciones no disponibles.</b> Ejecuta{' '}
+          <code>supabase/migracion_clasificaciones.sql</code> en Supabase (SQL Editor). Error: {errorPeriodos}
+        </p>
+      )}
 
       {hayPeriodos && (
         <div className="mb-6">
