@@ -162,6 +162,7 @@ supabase/seed_sub15.sql             → crea el equipo Sub 15 (sin puntos)
 supabase/migracion_dias_entreno.sql → horario de entrenos por equipo (equipo.horario_entreno)
 supabase/fix_codigos_sub15.sql      → corrige códigos del Sub 15 (DAMMS15/STAFFS15)
 supabase/migracion_clasificaciones.sql → clasificación actual (reseteable) + histórica
+supabase/migracion_multiperfil.sql   → mismo correo en varios equipos (elegir equipo al entrar)
 supabase/migracion_puntos_evento.sql→ añade puntos.evento_id (BD antigua)
 supabase/limpiar_datos.sql          → vacía datos de actividad (empezar de cero)
 supabase/demo_seed.sql              → datos de ejemplo (demo)
@@ -205,6 +206,12 @@ La puntuación se oculta en todo el frontend según `useAuth().usaPuntos` (el fl
   _Mis datos_ y la ficha del jugador muestran los puntos de la actual + el total
   histórico. Requiere ejecutar **`supabase/migracion_clasificaciones.sql`**; sin
   ella la app sigue funcionando como antes (sin pestañas).
+
+- **Mismo correo en varios equipos (10/2026):** un login puede tener un perfil en
+  cada equipo. Al entrar, si tiene más de uno, sale **"¿Con qué equipo entras?"**;
+  luego puede cambiar con **"Cambiar equipo"** (arriba). Para añadir el segundo
+  equipo: enlace `?alta` → código del otro equipo → **mismo correo y misma
+  contraseña**. Requiere **`supabase/migracion_multiperfil.sql`**.
 
 ## 9. ⏳ Pendiente / próximos pasos
 

@@ -7,6 +7,12 @@ export interface Equipo {
   usa_puntos: boolean
 }
 
+// Un equip on l'usuari té perfil (un mateix correu pot ser a diversos equips).
+export interface MiEquipo extends Equipo {
+  rol: Rol
+  perfil_id: string
+}
+
 export interface Perfil {
   id: string
   user_id: string | null
